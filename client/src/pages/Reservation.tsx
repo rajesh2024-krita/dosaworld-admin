@@ -44,8 +44,8 @@ export default function ReservationPage() {
   const reservationsPerPage = 5
   const totalReservationPages = Math.ceil(reservations.length / reservationsPerPage)
 
-  const API_URL = "http://localhost:3000/api/reservations"
-  const SLOT_API = "http://localhost:3000/api/timeslots"
+  const API_URL = "https://dosaworld-backend-xypt.onrender.com/api/reservations"
+  const SLOT_API = "https://dosaworld-backend-xypt.onrender.com/api/timeslots"
 
   const fetchReservations = async () => {
     try {

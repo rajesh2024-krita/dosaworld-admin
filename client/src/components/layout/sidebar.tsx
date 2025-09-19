@@ -33,6 +33,12 @@ const menuItems = [
         icon: CalendarCheck,
         permission: "dashboard:read" as const,
       },
+      {
+        name: "Billing Management",
+        path: "/billing-management",
+        icon: CalendarCheck,
+        permission: "dashboard:read" as const,
+      },
     ],
   },
   // {

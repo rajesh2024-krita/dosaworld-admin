@@ -25,6 +25,7 @@ import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import ProtectedRoute from "@/components/auth/protected-route";
 import ReservationPage from "./pages/Reservation";
+import EODBilling from "./pages/EODBilling";
 
 function DashboardLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -132,7 +133,7 @@ function AuthenticatedRoutes() {
       <Route path="/billing-management">
         <DashboardLayout title="Billing">
           <ProtectedRoute requiredPermission="billing:read">
-            <Billing />
+            <EODBilling />
           </ProtectedRoute>
         </DashboardLayout>
       </Route>

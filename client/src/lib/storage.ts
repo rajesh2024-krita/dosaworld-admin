@@ -4,7 +4,7 @@ export class LocalStorage {
   private static readonly ROLES_KEY = 'rbac-roles';
   private static readonly SESSION_KEY = 'rbac-session';
 
-  private static readonly API_BASE = "http://localhost:3000/api"; // backend URL
+  private static readonly API_BASE = "https://dosaworld-backend-xypt.onrender.com/api"; // backend URL
 
   // ===================== Users =====================
   static getUsers(): any[] {

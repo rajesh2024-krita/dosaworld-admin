@@ -7,7 +7,7 @@ export interface AuthUser extends User {
 
 export class AuthService {
   static async login(credentials: LoginUser): Promise<AuthUser> {
-    const response = await fetch("http://localhost:3000/api/auth/login", {
+    const response = await fetch("https://dosaworld-backend-xypt.onrender.com/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
@@ -24,7 +24,7 @@ export class AuthService {
   }
 
   static async register(userData: any): Promise<AuthUser> {
-    const response = await fetch("http://localhost:3000/api/auth/register", {
+    const response = await fetch("https://dosaworld-backend-xypt.onrender.com/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
