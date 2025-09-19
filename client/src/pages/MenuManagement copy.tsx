@@ -221,7 +221,7 @@ export default function MenuManagement() {
 
           {/* Create Item */}
           <div className="flex justify-between items-center">
-            <h2 className="text-base sm:text-lg font-semibold uppercase">Items Management</h2>
+            <h2 className="font-semibold">Items Management</h2>
             <Dialog open={isCreateItemOpen} onOpenChange={setIsCreateItemOpen}>
               <DialogTrigger asChild>
                 <Button>+ Create Item</Button>
@@ -300,55 +300,6 @@ export default function MenuManagement() {
               </tbody>
             </table>
           </div>
-          {/* ITEMS PAGINATION */}
-          <div className="flex flex-wrap gap-1 justify-center items-center">
-            {/* Previous */}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0"
-              disabled={itemPage === 1}
-              onClick={() => setItemPage(itemPage - 1)}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-
-            {Array.from({ length: totalItemPages }, (_, i) => i + 1)
-              .filter(
-                (page) =>
-                  page === 1 || // always show first
-                  page === totalItemPages || // always show last
-                  (page >= itemPage - 1 && page <= itemPage + 1) // only show neighbors on mobile
-              )
-              .map((page, idx, arr) => (
-                <div key={page} className="flex items-center">
-                  {/* Ellipsis before gap */}
-                  {idx > 0 && arr[idx] - arr[idx - 1] > 1 && (
-                    <span className="px-1 text-xs">...</span>
-                  )}
-                  <Button
-                    size="sm"
-                    variant={page === itemPage ? "default" : "outline"}
-                    className="h-8 w-8 p-0 text-xs"
-                    onClick={() => setItemPage(page)}
-                  >
-                    {page}
-                  </Button>
-                </div>
-              ))}
-
-            {/* Next */}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0"
-              disabled={itemPage === totalItemPages}
-              onClick={() => setItemPage(itemPage + 1)}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-
         </div>
       )}
 
@@ -391,7 +342,7 @@ export default function MenuManagement() {
 
           {/* Create Category */}
           <div className="flex justify-between items-center">
-            <h2 className="text-base sm:text-lg font-semibold uppercase">Categories Management</h2>
+            <h2 className="font-semibold">Categories Management</h2>
             <Dialog open={isCreateCategoryOpen} onOpenChange={setIsCreateCategoryOpen}>
               <DialogTrigger asChild>
                 <Button>+ Create Category</Button>
@@ -439,54 +390,6 @@ export default function MenuManagement() {
                 ))}
               </tbody>
             </table>
-          </div>
-          {/* CATEGORIES PAGINATION */}
-          <div className="flex flex-wrap gap-1 justify-center items-center">
-            {/* Previous */}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0"
-              disabled={categoryPage === 1}
-              onClick={() => setCategoryPage(categoryPage - 1)}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-
-            {Array.from({ length: totalCategoryPages }, (_, i) => i + 1)
-              .filter(
-                (page) =>
-                  page === 1 || // always show first
-                  page === totalCategoryPages || // always show last
-                  (page >= categoryPage - 1 && page <= categoryPage + 1) // only show neighbors on mobile
-              )
-              .map((page, idx, arr) => (
-                <div key={page} className="flex items-center">
-                  {/* Ellipsis before gap */}
-                  {idx > 0 && arr[idx] - arr[idx - 1] > 1 && (
-                    <span className="px-1 text-xs">...</span>
-                  )}
-                  <Button
-                    size="sm"
-                    variant={page === categoryPage ? "default" : "outline"}
-                    className="h-8 w-8 p-0 text-xs"
-                    onClick={() => setCategoryPage(page)}
-                  >
-                    {page}
-                  </Button>
-                </div>
-              ))}
-
-            {/* Next */}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0"
-              disabled={categoryPage === totalCategoryPages}
-              onClick={() => setCategoryPage(categoryPage + 1)}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
           </div>
         </div>
       )}
