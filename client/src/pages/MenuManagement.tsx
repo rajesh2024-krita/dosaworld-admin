@@ -328,7 +328,7 @@ export default function MenuManagement() {
               </thead>
               <tbody>
                 {paginatedItems.map((it, idx) => {
-                  const cat = categories.find(c => c.id === it.categoryId)
+                  const cat = categories.find(c => c.id === it.category_id)
                   return (
                     <tr key={it.id} className="border-b hover:bg-gray-50">
                       <td className="p-2">{getSerial(idx, itemPage, itemsPerPage)}</td>
