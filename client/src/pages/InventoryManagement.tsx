@@ -14,6 +14,23 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 // Types
 interface InventoryItem {
@@ -144,16 +161,17 @@ const InventoryManagement: React.FC = () => {
       setData(res?.data?.data || []);
       setFilteredData(res?.data?.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching inventory:", err);
     }
   };
+
   const fetchUsage = async () => {
     try {
       const res = await api.get("/usage");
       setUsageData(res?.data?.data || []);
       setFilteredUsageData(res?.data?.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching usage:", err);
     }
   };
 
@@ -209,19 +227,36 @@ const InventoryManagement: React.FC = () => {
         price: Number(formData.price),
         qty: Number(formData.qty),
         alertQty: Number(formData.alertQty),
-        total: Number(formData.total),
+        total: Number(formData.price) * Number(formData.qty),
       };
 
       if (editingItem) {
         const res = await api.put(`/inventory/${editingItem.id}`, payload);
-        if (res.data.success) fetchInventory();
-        else alert(res.data.message || "Failed to update item");
+        if (res.data.success) {
+          fetchInventory();
+        } else {
+          alert(res.data.message || "Failed to update item");
+        }
       } else {
         const res = await api.post("/inventory", payload);
-        if (res.data.success) fetchInventory();
-        else alert(res.data.message || "Failed to add item");
+        if (res.data.success) {
+          fetchInventory();
+        } else {
+          alert(res.data.message || "Failed to add item");
+        }
       }
       setIsModalOpen(false);
+      setEditingItem(null);
+      setFormData({
+        id: 0,
+        product: "",
+        packSize: "",
+        price: "",
+        qty: "",
+        total: "",
+        status: "In Stock",
+        alertQty: 0,
+      });
     } catch (err: any) {
       alert(err.response?.data?.message || "Error saving item");
     }
@@ -230,9 +265,18 @@ const InventoryManagement: React.FC = () => {
   // Handle Save Usage
   const handleUsageSave = async () => {
     const inventoryItem = data.find((i) => i.id === usageForm.inventoryId);
-    if (!inventoryItem) return console.error("Invalid inventory");
-    if (usageForm.usedQty <= 0) return console.error("Enter valid qty");
-    if (Number(inventoryItem.qty) < usageForm.usedQty) return console.error("Not enough stock");
+    if (!inventoryItem) {
+      alert("Please select a valid product");
+      return;
+    }
+    if (usageForm.usedQty <= 0) {
+      alert("Please enter a valid quantity");
+      return;
+    }
+    if (Number(inventoryItem.qty) < usageForm.usedQty) {
+      alert("Not enough stock available");
+      return;
+    }
 
     try {
       await api.post("/usage", {
@@ -253,17 +297,62 @@ const InventoryManagement: React.FC = () => {
       setIsUsageModalOpen(false);
       setUsageForm({ inventoryId: 0, usedQty: 0 });
     } catch (err) {
-      console.error(err);
+      console.error("Error saving usage:", err);
+      alert("Error recording usage");
     }
   };
 
   const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this item?")) return;
+    
     try {
       await api.delete(`/inventory/${id}`);
       fetchInventory();
     } catch (err) {
-      console.error(err);
+      console.error("Error deleting item:", err);
+      alert("Error deleting item");
     }
+  };
+
+  const handleAddNew = () => {
+    setEditingItem(null);
+    setFormData({
+      id: 0,
+      product: "",
+      packSize: "",
+      price: "",
+      qty: "",
+      total: "",
+      status: "In Stock",
+      alertQty: 0,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (item: InventoryItem) => {
+    setEditingItem(item);
+    setFormData(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingItem(null);
+    setFormData({
+      id: 0,
+      product: "",
+      packSize: "",
+      price: "",
+      qty: "",
+      total: "",
+      status: "In Stock",
+      alertQty: 0,
+    });
+  };
+
+  const handleCloseUsageModal = () => {
+    setIsUsageModalOpen(false);
+    setUsageForm({ inventoryId: 0, usedQty: 0 });
   };
 
   // Pagination
@@ -274,10 +363,6 @@ const InventoryManagement: React.FC = () => {
   const paginatedUsage = filteredUsageData.slice(
     (usagePage - 1) * ITEMS_PER_PAGE,
     usagePage * ITEMS_PER_PAGE
-  );
-
-  const lowStockNotifications = data.filter(
-    (item) => Number(item.qty) <= Number(item.alertQty)
   );
 
   // Aggregated Analytics
@@ -352,26 +437,27 @@ const InventoryManagement: React.FC = () => {
           <h1 className="text-base sm:text-lg font-semibold uppercase">
             Inventory Management
           </h1>
-          <div className="flex gap-2 flex-wrap">
-            <input
+          <div className="flex gap-2 flex-wrap text-sm">
+            <Input
               type="text"
               placeholder="Search by product or S.No"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="border p-2 rounded"
+              className="w-48"
             />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="border p-2 rounded"
-            >
-              <option>All</option>
-              <option>In Stock</option>
-              <option>Low Stock</option>
-              <option>Out of Stock</option>
-              <option>Pending Price</option>
-            </select>
-            <Button onClick={() => setIsModalOpen(true)}>+ New Item</Button>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All</SelectItem>
+                <SelectItem value="In Stock">In Stock</SelectItem>
+                <SelectItem value="Low Stock">Low Stock</SelectItem>
+                <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                <SelectItem value="Pending Price">Pending Price</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleAddNew}>+ New Item</Button>
             <Button
               onClick={() => {
                 setUsageForm({ inventoryId: 0, usedQty: 0 });
@@ -421,11 +507,7 @@ const InventoryManagement: React.FC = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        setEditingItem(item);
-                        setFormData(item);
-                        setIsModalOpen(true);
-                      }}
+                      onClick={() => handleEdit(item)}
                     >
                       <Edit />
                     </Button>
@@ -487,18 +569,19 @@ const InventoryManagement: React.FC = () => {
       <div className="space-y-4 mt-6">
         <h2 className="text-base sm:text-lg font-semibold uppercase">Usage Analytics</h2>
         <div className="flex gap-2 mb-2 flex-wrap">
-          <select
-            className="border p-2 rounded"
-            value={analyticsPeriod}
-            onChange={(e) => setAnalyticsPeriod(e.target.value as any)}
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-            <option value="fiveYear">Five-Year</option>
-            <option value="all">All</option>
-          </select>
+          <Select value={analyticsPeriod} onValueChange={(value: any) => setAnalyticsPeriod(value)}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="yearly">Yearly</SelectItem>
+              <SelectItem value="fiveYear">Five-Year</SelectItem>
+              <SelectItem value="all">All</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-gray-100 p-4 rounded-lg space-y-2">
@@ -526,6 +609,162 @@ const InventoryManagement: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Inventory Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingItem ? "Edit Item" : "Add New Item"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingItem ? "Update the inventory item details." : "Add a new item to your inventory."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="product" className="text-right">
+                Product
+              </Label>
+              <Input
+                id="product"
+                value={formData.product}
+                onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="packSize" className="text-right">
+                Pack Size
+              </Label>
+              <Input
+                id="packSize"
+                value={formData.packSize}
+                onChange={(e) => setFormData({ ...formData, packSize: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="price" className="text-right">
+                Price
+              </Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="qty" className="text-right">
+                Quantity
+              </Label>
+              <Input
+                id="qty"
+                type="number"
+                value={formData.qty}
+                onChange={(e) => setFormData({ ...formData, qty: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="alertQty" className="text-right">
+                Alert Qty
+              </Label>
+              <Input
+                id="alertQty"
+                type="number"
+                value={formData.alertQty}
+                onChange={(e) => setFormData({ ...formData, alertQty: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="status" className="text-right">
+                Status
+              </Label>
+              <Select 
+                value={formData.status} 
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="In Stock">In Stock</SelectItem>
+                  <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                  <SelectItem value="Pending Price">Pending Price</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseModal}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave}>
+              {editingItem ? "Update" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Usage Modal */}
+      <Dialog open={isUsageModalOpen} onOpenChange={setIsUsageModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Record Usage</DialogTitle>
+            <DialogDescription>
+              Record product usage from your inventory.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="inventoryId" className="text-right">
+                Product
+              </Label>
+              <Select 
+                value={usageForm.inventoryId.toString()} 
+                onValueChange={(value) => setUsageForm({ ...usageForm, inventoryId: Number(value) })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a product" />
+                </SelectTrigger>
+                <SelectContent>
+                  {data.map((item) => (
+                    <SelectItem key={item.id} value={item.id.toString()}>
+                      {item.product} (Stock: {item.qty})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="usedQty" className="text-right">
+                Used Qty
+              </Label>
+              <Input
+                id="usedQty"
+                type="number"
+                min="1"
+                value={usageForm.usedQty}
+                onChange={(e) => setUsageForm({ ...usageForm, usedQty: Number(e.target.value) })}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseUsageModal}>
+              Cancel
+            </Button>
+            <Button onClick={handleUsageSave}>
+              Save Usage
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
