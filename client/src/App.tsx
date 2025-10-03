@@ -26,6 +26,7 @@ import Header from "@/components/layout/header";
 import ProtectedRoute from "@/components/auth/protected-route";
 import ReservationPage from "./pages/Reservation";
 import EODBilling from "./pages/EODBilling";
+import InventoryManagement from "./pages/InventoryManagement";
 
 function DashboardLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -90,13 +91,13 @@ function AuthenticatedRoutes() {
           </ProtectedRoute>
         </DashboardLayout>
       </Route>
-      <Route path="/inventory-management">
+      {/* <Route path="/inventory-management">
         <DashboardLayout title="User Management">
           <ProtectedRoute requiredPermission="users:read">
             <Users />
           </ProtectedRoute>
         </DashboardLayout>
-      </Route>
+      </Route> */}
       
       <Route path="/roles">
         <DashboardLayout title="Role Management">
@@ -134,6 +135,14 @@ function AuthenticatedRoutes() {
         <DashboardLayout title="Billing">
           <ProtectedRoute requiredPermission="billing:read">
             <EODBilling />
+          </ProtectedRoute>
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/inventory-management">
+        <DashboardLayout title="Inventory Management">
+          <ProtectedRoute requiredPermission="billing:read">
+            <InventoryManagement />
           </ProtectedRoute>
         </DashboardLayout>
       </Route>

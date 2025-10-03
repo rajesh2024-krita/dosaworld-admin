@@ -39,6 +39,12 @@ const menuItems = [
         icon: CalendarCheck,
         permission: "dashboard:read" as const,
       },
+      {
+        name: "Inventory Management",
+        path: "/inventory-management",
+        icon: CalendarCheck,
+        permission: "billing:read" as const,
+      },
     ],
   },
   // {

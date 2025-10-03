@@ -23,7 +23,7 @@ export const ALL_PERMISSIONS: Permission[] = [
   'roles:read', 'roles:create', 'roles:update', 'roles:delete',
   'reports:read', 'reports:export',
   'settings:read', 'settings:update',
-  'billing:read', 'billing:update'
+  'billing:read', 'billing:update',
 ];
 
 export function hasPermission(userPermissions: string[], requiredPermission: Permission): boolean {
