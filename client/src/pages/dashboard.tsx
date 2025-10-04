@@ -1,253 +1,187 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LocalStorage } from '@/lib/storage';
-import { Users, UserCog, LogIn, Shield } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+"use client";
+
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
+dayjs.extend(isoWeek);
+
+const API_BILLING_URL = "https://dosaworld-backend-xypt.onrender.com/api/billings";
+const API_INVENTORY_URL = "https://dosaworld-backend-xypt.onrender.com/api/usage";
+const API_RESERVATION_URL = "https://dosaworld-backend-xypt.onrender.com/api/reservations";
+const CHART_COLOR = "#15803d"; // Unified green color for all graphs
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeRoles: 0,
-    loginSessions: 0,
-    securityAlerts: 3
-  });
+  const [billingData, setBillingData] = useState<any[]>([]);
+  const [inventoryData, setInventoryData] = useState<any[]>([]);
+  const [reservationData, setReservationData] = useState<any[]>([]);
+  const [period, setPeriod] = useState("today");
 
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [roleDistribution, setRoleDistribution] = useState<any[]>([]);
-
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = () => {
-    const users = LocalStorage.getUsers();
-    const roles = LocalStorage.getRoles();
-    const activities = LocalStorage.getActivityLogs();
-
-    // Calculate stats
-    setStats({
-      totalUsers: users.length,
-      activeRoles: roles.length,
-      loginSessions: users.filter(u => u.status === 'active').length,
-      securityAlerts: 3
-    });
-
-    // Get recent activity (last 5)
-    // Safe slice
-setRecentActivity(Array.isArray(activities) ? activities.slice(0, 5) : []);
-
-
-    // Calculate role distribution
-    const roleCount: Record<string, number> = {};
-    users.forEach(user => {
-      roleCount[user.role] = (roleCount[user.role] || 0) + 1;
-    });
-
-    const distribution = Object.entries(roleCount).map(([role, count]) => ({
-      name: role,
-      value: count,
-      percentage: Math.round((count / users.length) * 100)
-    }));
-
-    setRoleDistribution(distribution);
-  };
-
-  const activityChartData = [
-    { name: 'Mon', logins: 24 },
-    { name: 'Tue', logins: 18 },
-    { name: 'Wed', logins: 32 },
-    { name: 'Thu', logins: 28 },
-    { name: 'Fri', logins: 45 },
-    { name: 'Sat', logins: 12 },
-    { name: 'Sun', logins: 8 },
+  const periodOptions = [
+    { value: "today", label: "Daily" },
+    { value: "week", label: "Weekly" },
+    { value: "month", label: "Monthly" },
+    { value: "last3months", label: "Last 3 Months" },
+    { value: "last6months", label: "Last 6 Months" },
+    { value: "year", label: "Yearly" },
+    { value: "5year", label: "5 Year" },
+    { value: "all", label: "All Time" },
   ];
 
-  const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
+  // Fetch data
+  useEffect(() => {
+    const fetchBillingData = async () => {
+      try {
+        const res = await axios.get(API_BILLING_URL);
+        setBillingData(res.data?.data || []);
+      } catch (err) {
+        console.error("Failed to fetch billing data:", err);
+      }
+    };
+
+    const fetchInventoryData = async () => {
+      try {
+        const res = await axios.get(API_INVENTORY_URL);
+        setInventoryData(res.data?.data || []);
+      } catch (err) {
+        console.error("Failed to fetch inventory data:", err);
+      }
+    };
+
+    const fetchReservationData = async () => {
+      try {
+        const res = await axios.get(API_RESERVATION_URL);
+        setReservationData(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch reservation data:", err);
+      }
+    };
+
+    fetchBillingData();
+    fetchInventoryData();
+    fetchReservationData();
+  }, []);
+
+  // Group data by period
+  const groupByPeriod = (arr: any[], period: string, type: "billing" | "inventory" | "reservation") => {
+    const grouped: Record<string, any> = {};
+    const now = dayjs();
+
+    arr.forEach(row => {
+      const rowDate = dayjs(row.date);
+      let key = "";
+
+      switch (period) {
+        case "today":
+          if (!rowDate.isSame(now, "day")) return;
+          key = rowDate.format("YYYY-MM-DD");
+          break;
+        case "week":
+          if (!rowDate.isSame(now, "week")) return;
+          key = `Week ${rowDate.isoWeek()}-${rowDate.year()}`;
+          break;
+        case "month":
+          if (!rowDate.isSame(now, "month")) return;
+          key = rowDate.format("YYYY-MM");
+          break;
+        case "last3months":
+          if (!rowDate.isAfter(now.subtract(3, "month"))) return;
+          key = rowDate.format("YYYY-MM");
+          break;
+        case "last6months":
+          if (!rowDate.isAfter(now.subtract(6, "month"))) return;
+          key = rowDate.format("YYYY-MM");
+          break;
+        case "year":
+          if (!rowDate.isSame(now, "year")) return;
+          key = rowDate.format("YYYY");
+          break;
+        case "5year":
+          const startYear = Math.floor(rowDate.year() / 5) * 5;
+          const endYear = startYear + 4;
+          key = `${startYear}-${endYear}`;
+          break;
+        case "all":
+          key = "All Time";
+          break;
+      }
+
+      if (!grouped[key]) grouped[key] = { date: key, Income: 0, Expenses: 0, Inventory: 0, Reservations: 0 };
+      if (type === "billing") {
+        grouped[key].Income += Number(row.card || 0) + Number(row.cash || 0);
+        grouped[key].Expenses += Number(row.paid || 0);
+      } else if (type === "inventory") {
+        grouped[key].Inventory += Number(row.usedQty || 0);
+      } else if (type === "reservation") {
+        grouped[key].Reservations += 1;
+      }
+    });
+
+    return Object.values(grouped).sort((a, b) => (a.date < b.date ? 1 : -1));
+  };
+
+  const renderChart = (title: string, dataKey: string, data: any[]) => (
+    <Card>
+      <CardHeader><CardTitle className="text-base sm:text-md font-semibold uppercase">{title}</CardTitle></CardHeader>
+      <CardContent>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey={dataKey} fill={CHART_COLOR} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const billingRows = groupByPeriod(billingData, period, "billing");
+  const inventoryRows = groupByPeriod(inventoryData, period, "inventory");
+  const reservationRows = groupByPeriod(reservationData, period, "reservation");
+
+  const totalIncome = billingRows.reduce((a, r) => a + Number(r.Income || 0), 0);
+  const totalExpenses = billingRows.reduce((a, r) => a + Number(r.Expenses || 0), 0);
+  const totalInventory = inventoryRows.reduce((a, r) => a + Number(r.Inventory || 0), 0);
+  const totalReservations = reservationRows.reduce((a, r) => a + Number(r.Reservations || 0), 0);
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <Card data-testid="card-total-users">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
-                <p className="text-3xl font-bold text-card-foreground" data-testid="stat-total-users">
-                  {stats.totalUsers}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              <span className="text-primary">+12%</span> from last month
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card data-testid="card-active-roles">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Roles</p>
-                <p className="text-3xl font-bold text-card-foreground" data-testid="stat-active-roles">
-                  {stats.activeRoles}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-chart-2/10 rounded-lg flex items-center justify-center">
-                <UserCog className="w-6 h-6 text-chart-2" />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              <span className="text-chart-2">+2</span> new roles added
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card data-testid="card-login-sessions">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Login Sessions</p>
-                <p className="text-3xl font-bold text-card-foreground" data-testid="stat-login-sessions">
-                  {stats.loginSessions}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-chart-3/10 rounded-lg flex items-center justify-center">
-                <LogIn className="w-6 h-6 text-chart-3" />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              <span className="text-chart-3">{Math.floor(stats.loginSessions * 0.3)}</span> active now
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card data-testid="card-security-alerts">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Security Alerts</p>
-                <p className="text-3xl font-bold text-card-foreground" data-testid="stat-security-alerts">
-                  {stats.securityAlerts}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-chart-1/10 rounded-lg flex items-center justify-center">
-                <Shield className="w-6 h-6 text-chart-1" />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              <span className="text-chart-1">2 resolved</span> today
-            </p>
-          </CardContent>
-        </Card>
+      {/* Period Dropdown */}
+      <div className="flex justify-between">
+        <h2 className="text-base sm:text-lg font-semibold uppercase">DashBoard</h2>
+        <Select value={period} onValueChange={setPeriod}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Select Period" />
+          </SelectTrigger>
+          <SelectContent>
+            {periodOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Charts and Tables Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* User Activity Chart */}
-        <Card data-testid="card-activity-chart">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>User Activity</CardTitle>
-              <select className="text-sm border border-input rounded px-3 py-1 bg-background">
-                <option>Last 7 days</option>
-                <option>Last 30 days</option>
-                <option>Last 90 days</option>
-              </select>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activityChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Bar dataKey="logins" fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Role Distribution */}
-        <Card data-testid="card-role-distribution">
-          <CardHeader>
-            <CardTitle>Role Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {roleDistribution.map((role, index) => (
-                <div key={role.name} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    <span className="text-sm text-card-foreground">{role.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-card-foreground">{role.value}</span>
-                    <div className="w-20 bg-muted rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full" 
-                        style={{ 
-                          width: `${role.percentage}%`,
-                          backgroundColor: COLORS[index % COLORS.length]
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card><CardHeader><CardTitle className="text-md font-medium">Total Income</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">€{totalIncome.toFixed(2)}</p></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-md font-medium">Total Expenses</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">€{totalExpenses.toFixed(2)}</p></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-md font-medium">Total Inventory Used</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{totalInventory}</p></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-md font-medium">Total Reservations</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{totalReservations}</p></CardContent></Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card data-testid="card-recent-activity">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Activity</CardTitle>
-            <button className="text-sm text-primary hover:underline">View All</button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {recentActivity.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No recent activity</p>
-          ) : (
-            <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-4 pb-4 border-b border-border last:border-b-0">
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Users className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-card-foreground">{activity.description}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(activity.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {renderChart("Income", "Income", billingRows)}
+        {renderChart("Expenses", "Expenses", billingRows)}
+        {renderChart("Inventory Usage", "Inventory", inventoryRows)}
+        {renderChart("Reservations", "Reservations", reservationRows)}
+      </div>
     </div>
   );
 }
