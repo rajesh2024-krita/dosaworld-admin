@@ -1,7 +1,7 @@
 // src/components/InventoryManagement.tsx
 
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Search, Filter, X } from "lucide-react";
 import React, { useState, useEffect, useMemo } from "react";
 import { api } from "@/lib/axios";
 import {
@@ -31,6 +31,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Types
 interface InventoryItem {
@@ -52,7 +54,72 @@ interface UsageItem {
   date: string;
 }
 
+interface Toast {
+  id: number;
+  item: InventoryItem;
+  type: 'lowStock';
+}
+
 const ITEMS_PER_PAGE = 5;
+
+// Toast Component
+interface ToastContainerProps {
+  toasts: Toast[];
+  onClose: (id: number) => void;
+  onEdit: (item: InventoryItem) => void;
+}
+
+const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onClose, onEdit }) => {
+  if (toasts.length === 0) return null;
+
+  return (
+    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+      {toasts.map((toast) => (
+        <div
+          key={toast.id}
+          className="bg-white border border-red-200 rounded-lg shadow-lg p-4 animate-in slide-in-from-right duration-300"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="font-semibold text-sm text-red-800">Low Stock Alert</span>
+              </div>
+              <p className="text-sm text-gray-600 mb-2">
+                <span className="font-medium">{toast.item.product}</span> is running low. 
+                Current stock: <span className="font-semibold text-red-600">{toast.item.qty}</span> 
+                (Alert at: {toast.item.alertQty})
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => onEdit(toast.item)}
+                  className="bg-[#15803d] hover:bg-[#15803d] text-white h-7 text-xs"
+                >
+                  Add Stock
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onClose(toast.id)}
+                  className="h-7 text-xs"
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+            <button
+              onClick={() => onClose(toast.id)}
+              className="ml-2 flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // Pagination Component
 interface PaginationProps {
@@ -85,19 +152,21 @@ const Pagination: React.FC<PaginationProps> = ({
   };
 
   return (
-    <div className="flex justify-center gap-1 mt-2">
+    <div className="flex justify-center gap-1 mt-4">
       <button
-        className="px-2 py-1 border rounded disabled:opacity-50"
+        className="px-3 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
       >
-        Prev
+        Previous
       </button>
       {getPageNumbers().map((p) => (
         <button
           key={p}
-          className={`px-3 py-1 border rounded ${
-            p === currentPage ? "bg-gray-300" : ""
+          className={`px-4 py-2 border rounded-lg transition-colors ${
+            p === currentPage 
+              ? "bg-[#15803d] text-white border-[#15803d]" 
+              : "hover:bg-gray-50"
           }`}
           onClick={() => onPageChange(p)}
         >
@@ -105,7 +174,7 @@ const Pagination: React.FC<PaginationProps> = ({
         </button>
       ))}
       <button
-        className="px-2 py-1 border rounded disabled:opacity-50"
+        className="px-3 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
@@ -147,12 +216,21 @@ const InventoryManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [inventoryPage, setInventoryPage] = useState(1);
+  
+  // Usage Filters & Pagination
+  const [usageSearchTerm, setUsageSearchTerm] = useState("");
+  const [usageDateFilter, setUsageDateFilter] = useState("all");
   const [usagePage, setUsagePage] = useState(1);
 
   // Analytics
   const [analyticsPeriod, setAnalyticsPeriod] = useState<
     "daily" | "weekly" | "monthly" | "yearly" | "fiveYear" | "all"
   >("daily");
+
+  // Toast Notifications
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toastIdCounter, setToastIdCounter] = useState(0);
+  const [notifiedItems, setNotifiedItems] = useState<Set<number>>(new Set());
 
   // Fetch Inventory & Usage
   const fetchInventory = async () => {
@@ -180,7 +258,39 @@ const InventoryManagement: React.FC = () => {
     fetchUsage();
   }, []);
 
-  // Filters
+  // Check for low stock items and show toasts
+  useEffect(() => {
+    const lowStockItems = data.filter(
+      item => Number(item.qty) <= Number(item.alertQty) && item.status !== "Out of Stock"
+    );
+
+    const newNotifiedItems = new Set(notifiedItems);
+    const newToasts: Toast[] = [];
+
+    lowStockItems.forEach(item => {
+      if (!notifiedItems.has(item.id)) {
+        newNotifiedItems.add(item.id);
+        newToasts.push({
+          id: toastIdCounter + newToasts.length + 1,
+          item,
+          type: 'lowStock'
+        });
+      }
+    });
+
+    if (newToasts.length > 0) {
+      setToastIdCounter(prev => prev + newToasts.length);
+      setToasts(prev => [...prev, ...newToasts]);
+      setNotifiedItems(newNotifiedItems);
+    }
+
+    // Clean up toasts for items that are no longer low stock
+    setToasts(prev => prev.filter(toast => 
+      lowStockItems.some(item => item.id === toast.item.id)
+    ));
+  }, [data]);
+
+  // Inventory Filters
   useEffect(() => {
     let tempData = [...data];
     if (searchTerm) {
@@ -208,18 +318,61 @@ const InventoryManagement: React.FC = () => {
     setInventoryPage(1);
   }, [searchTerm, statusFilter, data]);
 
+  // Usage Filters
   useEffect(() => {
     let tempData = [...usageData];
-    if (searchTerm) {
+    
+    // Search filter
+    if (usageSearchTerm) {
       tempData = tempData.filter((u) =>
-        u.product.toLowerCase().includes(searchTerm.toLowerCase())
+        u.product.toLowerCase().includes(usageSearchTerm.toLowerCase())
       );
     }
+    
+    // Date filter
+    if (usageDateFilter !== "all") {
+      const now = new Date();
+      tempData = tempData.filter((u) => {
+        const usageDate = new Date(u.date);
+        switch (usageDateFilter) {
+          case "today":
+            return usageDate.toDateString() === now.toDateString();
+          case "week":
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return usageDate >= weekAgo;
+          case "month":
+            const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+            return usageDate >= monthAgo;
+          case "year":
+            const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+            return usageDate >= yearAgo;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Sort by date (newest first)
+    tempData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
     setFilteredUsageData(tempData);
     setUsagePage(1);
-  }, [usageData, searchTerm]);
+  }, [usageData, usageSearchTerm, usageDateFilter]);
 
-  // Handle Save Inventory
+  // Toast handlers
+  const handleCloseToast = (id: number) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  const handleEditFromToast = (item: InventoryItem) => {
+    setEditingItem(item);
+    setFormData(item);
+    setIsModalOpen(true);
+    // Remove the toast for this item since we're editing it
+    setToasts(prev => prev.filter(toast => toast.item.id !== item.id));
+  };
+
+  // Handle Save (Create or Update)
   const handleSave = async () => {
     try {
       const payload = {
@@ -230,84 +383,60 @@ const InventoryManagement: React.FC = () => {
         total: Number(formData.price) * Number(formData.qty),
       };
 
-      if (editingItem) {
-        const res = await api.put(`/inventory/${editingItem.id}`, payload);
-        if (res.data.success) {
-          fetchInventory();
-        } else {
-          alert(res.data.message || "Failed to update item");
-        }
+      const res = editingItem
+        ? await api.put(`/inventory/${editingItem.id}`, payload)
+        : await api.post("/inventory", payload);
+
+      if (res.data.success) {
+        handleCloseModal();
+        await fetchInventory();
+        alert(res.data.message || "Item saved successfully");
       } else {
-        const res = await api.post("/inventory", payload);
-        if (res.data.success) {
-          fetchInventory();
-        } else {
-          alert(res.data.message || "Failed to add item");
-        }
+        alert(res.data.message || "Failed to save item");
       }
-      setIsModalOpen(false);
-      setEditingItem(null);
-      setFormData({
-        id: 0,
-        product: "",
-        packSize: "",
-        price: "",
-        qty: "",
-        total: "",
-        status: "In Stock",
-        alertQty: 0,
-      });
     } catch (err: any) {
+      console.error("Error saving item:", err);
       alert(err.response?.data?.message || "Error saving item");
     }
   };
 
   // Handle Save Usage
   const handleUsageSave = async () => {
-    const inventoryItem = data.find((i) => i.id === usageForm.inventoryId);
-    if (!inventoryItem) {
-      alert("Please select a valid product");
-      return;
-    }
-    if (usageForm.usedQty <= 0) {
-      alert("Please enter a valid quantity");
-      return;
-    }
-    if (Number(inventoryItem.qty) < usageForm.usedQty) {
-      alert("Not enough stock available");
-      return;
-    }
+    if (!usageForm.inventoryId) return alert("Please select a valid product");
+    if (usageForm.usedQty <= 0) return alert("Please enter a valid quantity");
 
     try {
-      await api.post("/usage", {
+      const res = await api.post("/usage", {
         inventoryId: usageForm.inventoryId,
         usedQty: usageForm.usedQty,
         date: new Date().toISOString(),
-        product: inventoryItem.product,
       });
 
-      await api.put(`/inventory/${usageForm.inventoryId}`, {
-        ...inventoryItem,
-        qty: Number(inventoryItem.qty) - usageForm.usedQty,
-      });
-
-      await fetchInventory();
-      await fetchUsage();
-
-      setIsUsageModalOpen(false);
-      setUsageForm({ inventoryId: 0, usedQty: 0 });
-    } catch (err) {
-      console.error("Error saving usage:", err);
-      alert("Error recording usage");
+      if (res.data.success) {
+        await fetchInventory();
+        await fetchUsage();
+        handleCloseUsageModal();
+        alert(res.data.message || "Usage recorded successfully");
+      } else {
+        alert(res.data.message || "Failed to record usage");
+      }
+    } catch (err: any) {
+      console.error("Error recording usage:", err);
+      alert(err.response?.data?.message || "Error recording usage");
     }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this item?")) return;
-    
+
     try {
-      await api.delete(`/inventory/${id}`);
-      fetchInventory();
+      const res = await api.delete(`/inventory/${id}`);
+      if (res.data.success) {
+        await fetchInventory();
+        alert(res.data.message || "Item deleted successfully");
+      } else {
+        alert(res.data.message || "Failed to delete item");
+      }
     } catch (err) {
       console.error("Error deleting item:", err);
       alert("Error deleting item");
@@ -376,13 +505,10 @@ const InventoryManagement: React.FC = () => {
           key = date.toLocaleDateString();
           break;
         case "weekly":
-          const week = Math.ceil(
-            ((date.getTime() - new Date(date.getFullYear(), 0, 1).getTime()) /
-              86400000 +
-              new Date(date.getFullYear(), 0, 1).getDay() +
-              1) /
-              7
-          );
+          // Sunday-based week
+          const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+          const pastDays = Math.floor((date.getTime() - firstDayOfYear.getTime()) / 86400000);
+          const week = Math.floor((pastDays + firstDayOfYear.getDay()) / 7) + 1;
           key = `${date.getFullYear()}-W${week}`;
           break;
         case "monthly":
@@ -428,268 +554,416 @@ const InventoryManagement: React.FC = () => {
     return { totalUsage, avgUsage, mostUsedProduct, chartData };
   }, [usageData, analyticsPeriod]);
 
+  // Get status badge color
+  const getStatusBadge = (status: string, qty: number, alertQty: number) => {
+    if (qty <= alertQty) {
+      return <Badge variant="destructive">Low Stock</Badge>;
+    }
+    switch (status) {
+      case "In Stock":
+        return <Badge variant="default">In Stock</Badge>;
+      case "Out of Stock":
+        return <Badge variant="secondary">Out of Stock</Badge>;
+      case "Pending Price":
+        return <Badge variant="outline">Pending Price</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
   // UI
   return (
-    <div className="space-y-6 p-4">
-      {/* Inventory Section */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
-          <h1 className="text-base sm:text-lg font-semibold uppercase">
-            Inventory Management
-          </h1>
-          <div className="flex gap-2 flex-wrap text-sm">
-            <Input
-              type="text"
-              placeholder="Search by product or S.No"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-48"
-            />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All</SelectItem>
-                <SelectItem value="In Stock">In Stock</SelectItem>
-                <SelectItem value="Low Stock">Low Stock</SelectItem>
-                <SelectItem value="Out of Stock">Out of Stock</SelectItem>
-                <SelectItem value="Pending Price">Pending Price</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleAddNew}>+ New Item</Button>
-            <Button
-              onClick={() => {
-                setUsageForm({ inventoryId: 0, usedQty: 0 });
-                setIsUsageModalOpen(true);
-              }}
-            >
-              + Usage
-            </Button>
-          </div>
-        </div>
+    <div className="space-y-6 p-4 max-w-7xl mx-auto">
+      {/* Toast Notifications */}
+      <ToastContainer 
+        toasts={toasts} 
+        onClose={handleCloseToast}
+        onEdit={handleEditFromToast}
+      />
 
-        {/* Inventory Table */}
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="min-w-full text-left">
-            <thead className="border-b uppercase text-sm">
-              <tr>
-                <th className="p-2">S.No</th>
-                <th className="p-2">Product</th>
-                <th className="p-2">Pack Size</th>
-                <th className="p-2">Price</th>
-                <th className="p-2">Qty</th>
-                <th className="p-2">Total</th>
-                <th className="p-2">Status</th>
-                <th className="p-2">Alert Qty</th>
-                <th className="p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedInventory.map((item, idx) => (
-                <tr
-                  key={item.id}
-                  className={`border-b hover:bg-gray-50 text-sm ${
-                    Number(item.qty) <= Number(item.alertQty) ? "bg-red-50" : ""
-                  }`}
-                >
-                  <td className="p-2">
-                    {(inventoryPage - 1) * ITEMS_PER_PAGE + idx + 1}
-                  </td>
-                  <td className="p-2">{item.product}</td>
-                  <td className="p-2">{item.packSize}</td>
-                  <td className="p-2">€{item.price}</td>
-                  <td className="p-2">{item.qty}</td>
-                  <td className="p-2">€{item.total}</td>
-                  <td className="p-2">{item.status}</td>
-                  <td className="p-2">{item.alertQty}</td>
-                  <td className="p-2 flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(item)}
-                    >
-                      <Edit />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </td>
+      {/* Inventory Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle className="text-xl font-bold">Inventory Management</CardTitle>
+            <div className="flex gap-2 flex-wrap">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search inventory..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-48 pl-10"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-32">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="In Stock">In Stock</SelectItem>
+                  <SelectItem value="Low Stock">Low Stock</SelectItem>
+                  <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={handleAddNew} className="bg-[#15803d] hover:bg-[#15803d]">
+                + New Item
+              </Button>
+              <Button
+                onClick={() => {
+                  setUsageForm({ inventoryId: 0, usedQty: 0 });
+                  setIsUsageModalOpen(true);
+                }}
+                variant="outline"
+              >
+                + Record Usage
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Inventory Table */}
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="min-w-full text-left">
+              <thead className="border-b bg-gray-50 uppercase text-sm">
+                <tr>
+                  <th className="p-3 font-semibold">S.No</th>
+                  <th className="p-3 font-semibold">Product</th>
+                  <th className="p-3 font-semibold">Pack Size</th>
+                  <th className="p-3 font-semibold">Price</th>
+                  <th className="p-3 font-semibold">Qty</th>
+                  <th className="p-3 font-semibold">Total</th>
+                  <th className="p-3 font-semibold">Status</th>
+                  <th className="p-3 font-semibold">Alert Qty</th>
+                  <th className="p-3 font-semibold">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination
-            totalItems={filteredData.length}
-            itemsPerPage={ITEMS_PER_PAGE}
-            currentPage={inventoryPage}
-            onPageChange={setInventoryPage}
-          />
-        </div>
-      </div>
+              </thead>
+              <tbody>
+                {paginatedInventory.map((item, idx) => (
+                  <tr
+                    key={item.id}
+                    className={`border-b hover:bg-gray-50 text-sm transition-colors ${
+                      Number(item.qty) <= Number(item.alertQty) ? "bg-red-50" : ""
+                    }`}
+                  >
+                    <td className="p-3 font-medium">
+                      {(inventoryPage - 1) * ITEMS_PER_PAGE + idx + 1}
+                    </td>
+                    <td className="p-3 font-medium">{item.product}</td>
+                    <td className="p-3 text-gray-600">{item.packSize}</td>
+                    <td className="p-3">€{item.price}</td>
+                    <td className="p-3">
+                      <span className={`font-semibold ${
+                        Number(item.qty) <= Number(item.alertQty) ? "text-red-600" : "text-[#15803d]"
+                      }`}>
+                        {item.qty}
+                      </span>
+                    </td>
+                    <td className="p-3 font-semibold">€{item.total}</td>
+                    <td className="p-3">
+                      {getStatusBadge(item.status, Number(item.qty), Number(item.alertQty))}
+                    </td>
+                    <td className="p-3 text-orange-600 font-medium">{item.alertQty}</td>
+                    <td className="p-3">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(item)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(item.id)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {paginatedInventory.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No inventory items found
+              </div>
+            )}
+            <Pagination
+              totalItems={filteredData.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              currentPage={inventoryPage}
+              onPageChange={setInventoryPage}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Usage Section */}
-      <div className="space-y-4">
-        <h2 className="text-base sm:text-lg font-semibold uppercase">Daily Usage</h2>
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="min-w-full text-left">
-            <thead className="border-b uppercase text-sm">
-              <tr>
-                <th className="p-2">S.No</th>
-                <th className="p-2">Product</th>
-                <th className="p-2">Used Qty</th>
-                <th className="p-2">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedUsage.map((u, idx) => (
-                <tr key={u.id} className="border-b hover:bg-gray-50 text-sm">
-                  <td className="p-2">{(usagePage - 1) * ITEMS_PER_PAGE + idx + 1}</td>
-                  <td className="p-2">{u.product}</td>
-                  <td className="p-2">{u.usedQty}</td>
-                  <td className="p-2">{new Date(u.date).toLocaleDateString()}</td>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle className="text-xl font-bold">Daily Usage</CardTitle>
+            <div className="flex gap-2 flex-wrap">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search usage..."
+                  value={usageSearchTerm}
+                  onChange={(e) => setUsageSearchTerm(e.target.value)}
+                  className="w-48 pl-10"
+                />
+              </div>
+              <Select value={usageDateFilter} onValueChange={setUsageDateFilter}>
+                <SelectTrigger className="w-32">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Date Range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">Past Week</SelectItem>
+                  <SelectItem value="month">Past Month</SelectItem>
+                  <SelectItem value="year">Past Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="min-w-full text-left">
+              <thead className="border-b bg-gray-50 uppercase text-sm">
+                <tr>
+                  <th className="p-3 font-semibold">S.No</th>
+                  <th className="p-3 font-semibold">Product</th>
+                  <th className="p-3 font-semibold">Used Qty</th>
+                  <th className="p-3 font-semibold">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination
-            totalItems={filteredUsageData.length}
-            itemsPerPage={ITEMS_PER_PAGE}
-            currentPage={usagePage}
-            onPageChange={setUsagePage}
-          />
-        </div>
-      </div>
+              </thead>
+              <tbody>
+                {paginatedUsage.map((u, idx) => (
+                  <tr key={u.id} className="border-b hover:bg-gray-50 text-sm transition-colors">
+                    <td className="p-3 font-medium">
+                      {(usagePage - 1) * ITEMS_PER_PAGE + idx + 1}
+                    </td>
+                    <td className="p-3 font-medium">{u.product}</td>
+                    <td className="p-3">
+                      <Badge variant="secondary" className="bg-[#15803d] text-white">
+                        {u.usedQty}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-gray-600">
+                      {new Date(u.date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {paginatedUsage.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No usage records found
+              </div>
+            )}
+            <Pagination
+              totalItems={filteredUsageData.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              currentPage={usagePage}
+              onPageChange={setUsagePage}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Analytics Section */}
-      <div className="space-y-4 mt-6">
-        <h2 className="text-base sm:text-lg font-semibold uppercase">Usage Analytics</h2>
-        <div className="flex gap-2 mb-2 flex-wrap">
-          <Select value={analyticsPeriod} onValueChange={(value: any) => setAnalyticsPeriod(value)}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="yearly">Yearly</SelectItem>
-              <SelectItem value="fiveYear">Five-Year</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gray-100 p-4 rounded-lg space-y-2">
-            <h3 className="font-semibold text-gray-700">Summary</h3>
-            <p>Total Usage: {usageAnalytics.totalUsage}</p>
-            <p>Average Usage: {usageAnalytics.avgUsage.toFixed(2)}</p>
-            <p>Most Used Product: {usageAnalytics.mostUsedProduct}</p>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle className="text-xl font-bold">Usage Analytics</CardTitle>
+            <Select value={analyticsPeriod} onValueChange={(value: any) => setAnalyticsPeriod(value)}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+                <SelectItem value="fiveYear">Five-Year</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="bg-white p-4 rounded-lg">
-            <h3 className="font-semibold text-gray-700 mb-2">Usage Over Time</h3>
-            {usageAnalytics.chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={usageAnalytics.chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="qty" name="Used Qty" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p>No usage data available</p>
-            )}
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Summary Cards */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Total Usage</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-[#15803d]">
+                    {usageAnalytics.totalUsage}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Total units consumed</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Average Usage</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-[#15803d]">
+                    {usageAnalytics.avgUsage.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Average per record</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Most Used Product</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-lg font-bold text-[#15803d] truncate">
+                    {usageAnalytics.mostUsedProduct}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Highest consumption</p>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Chart */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Usage Over Time</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {usageAnalytics.chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={usageAnalytics.chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                          tick={{ fontSize: 12 }}
+                        />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="qty" name="Used Quantity" fill="#15803d" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="text-center py-12 text-gray-500">
+                      No usage data available for the selected period
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Inventory Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>
-              {editingItem ? "Edit Item" : "Add New Item"}
+            <DialogTitle className="text-xl">
+              {editingItem ? "Edit Inventory Item" : "Add New Inventory Item"}
             </DialogTitle>
             <DialogDescription>
-              {editingItem ? "Update the inventory item details." : "Add a new item to your inventory."}
+              {editingItem ? "Update the inventory item details below." : "Add a new item to your inventory below."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="product" className="text-right">
-                Product
+            <div className="space-y-2">
+              <Label htmlFor="product" className="text-sm font-medium">
+                Product Name
               </Label>
               <Input
                 id="product"
                 value={formData.product}
                 onChange={(e) => setFormData({ ...formData, product: e.target.value })}
-                className="col-span-3"
+                placeholder="Enter product name"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="packSize" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="packSize" className="text-sm font-medium">
                 Pack Size
               </Label>
               <Input
                 id="packSize"
                 value={formData.packSize}
                 onChange={(e) => setFormData({ ...formData, packSize: e.target.value })}
-                className="col-span-3"
+                placeholder="Enter pack size"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="price" className="text-right">
-                Price
-              </Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                className="col-span-3"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="price" className="text-sm font-medium">
+                  Price (€)
+                </Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="qty" className="text-sm font-medium">
+                  Quantity
+                </Label>
+                <Input
+                  id="qty"
+                  type="number"
+                  value={formData.qty}
+                  onChange={(e) => setFormData({ ...formData, qty: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="qty" className="text-right">
-                Quantity
-              </Label>
-              <Input
-                id="qty"
-                type="number"
-                value={formData.qty}
-                onChange={(e) => setFormData({ ...formData, qty: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="alertQty" className="text-right">
-                Alert Qty
+            <div className="space-y-2">
+              <Label htmlFor="alertQty" className="text-sm font-medium">
+                Alert Quantity
               </Label>
               <Input
                 id="alertQty"
                 type="number"
                 value={formData.alertQty}
                 onChange={(e) => setFormData({ ...formData, alertQty: e.target.value })}
-                className="col-span-3"
+                placeholder="Set low stock alert level"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-sm font-medium">
                 Status
               </Label>
               <Select 
                 value={formData.status} 
                 onValueChange={(value) => setFormData({ ...formData, status: value })}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -704,8 +978,8 @@ const InventoryManagement: React.FC = () => {
             <Button variant="outline" onClick={handleCloseModal}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              {editingItem ? "Update" : "Save"}
+            <Button onClick={handleSave} className="bg-[#15803d] hover:bg-[#15803d]">
+              {editingItem ? "Update Item" : "Add Item"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -715,25 +989,25 @@ const InventoryManagement: React.FC = () => {
       <Dialog open={isUsageModalOpen} onOpenChange={setIsUsageModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Record Usage</DialogTitle>
+            <DialogTitle className="text-xl">Record Product Usage</DialogTitle>
             <DialogDescription>
-              Record product usage from your inventory.
+              Record product usage from your inventory. This will deduct from the available quantity.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="inventoryId" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="inventoryId" className="text-sm font-medium">
                 Product
               </Label>
               <Select 
                 value={usageForm.inventoryId.toString()} 
                 onValueChange={(value) => setUsageForm({ ...usageForm, inventoryId: Number(value) })}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger>
                   <SelectValue placeholder="Select a product" />
                 </SelectTrigger>
                 <SelectContent>
-                  {data.map((item) => (
+                  {data.filter(item => Number(item.qty) > 0).map((item) => (
                     <SelectItem key={item.id} value={item.id.toString()}>
                       {item.product} (Stock: {item.qty})
                     </SelectItem>
@@ -741,9 +1015,9 @@ const InventoryManagement: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="usedQty" className="text-right">
-                Used Qty
+            <div className="space-y-2">
+              <Label htmlFor="usedQty" className="text-sm font-medium">
+                Quantity Used
               </Label>
               <Input
                 id="usedQty"
@@ -751,7 +1025,7 @@ const InventoryManagement: React.FC = () => {
                 min="1"
                 value={usageForm.usedQty}
                 onChange={(e) => setUsageForm({ ...usageForm, usedQty: Number(e.target.value) })}
-                className="col-span-3"
+                placeholder="Enter quantity used"
               />
             </div>
           </div>
@@ -759,8 +1033,8 @@ const InventoryManagement: React.FC = () => {
             <Button variant="outline" onClick={handleCloseUsageModal}>
               Cancel
             </Button>
-            <Button onClick={handleUsageSave}>
-              Save Usage
+            <Button onClick={handleUsageSave} className="bg-[#15803d] hover:bg-[#15803d]">
+              Record Usage
             </Button>
           </DialogFooter>
         </DialogContent>
