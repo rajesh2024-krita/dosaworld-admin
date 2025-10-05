@@ -34,6 +34,15 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Loader Component
+const Loader: React.FC = () => {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-green-600 border-solid"></div>
+    </div>
+  );
+};
+
 // Types
 interface InventoryItem {
   id: number;
@@ -186,6 +195,11 @@ const Pagination: React.FC<PaginationProps> = ({
 
 // Main Component
 const InventoryManagement: React.FC = () => {
+  // Loading states
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Inventory & Usage
   const [data, setData] = useState<InventoryItem[]>([]);
   const [filteredData, setFilteredData] = useState<InventoryItem[]>([]);
@@ -235,11 +249,14 @@ const InventoryManagement: React.FC = () => {
   // Fetch Inventory & Usage
   const fetchInventory = async () => {
     try {
+      setIsLoading(true);
       const res = await api.get("/inventory");
       setData(res?.data?.data || []);
       setFilteredData(res?.data?.data || []);
     } catch (err) {
       console.error("Error fetching inventory:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -254,8 +271,10 @@ const InventoryManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchInventory();
-    fetchUsage();
+    const loadData = async () => {
+      await Promise.all([fetchInventory(), fetchUsage()]);
+    };
+    loadData();
   }, []);
 
   // Check for low stock items and show toasts
@@ -375,6 +394,7 @@ const InventoryManagement: React.FC = () => {
   // Handle Save (Create or Update)
   const handleSave = async () => {
     try {
+      setIsSaving(true);
       const payload = {
         ...formData,
         price: Number(formData.price),
@@ -397,6 +417,8 @@ const InventoryManagement: React.FC = () => {
     } catch (err: any) {
       console.error("Error saving item:", err);
       alert(err.response?.data?.message || "Error saving item");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -406,6 +428,7 @@ const InventoryManagement: React.FC = () => {
     if (usageForm.usedQty <= 0) return alert("Please enter a valid quantity");
 
     try {
+      setIsSaving(true);
       const res = await api.post("/usage", {
         inventoryId: usageForm.inventoryId,
         usedQty: usageForm.usedQty,
@@ -423,6 +446,8 @@ const InventoryManagement: React.FC = () => {
     } catch (err: any) {
       console.error("Error recording usage:", err);
       alert(err.response?.data?.message || "Error recording usage");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -430,6 +455,7 @@ const InventoryManagement: React.FC = () => {
     if (!confirm("Are you sure you want to delete this item?")) return;
 
     try {
+      setIsDeleting(true);
       const res = await api.delete(`/inventory/${id}`);
       if (res.data.success) {
         await fetchInventory();
@@ -440,6 +466,8 @@ const InventoryManagement: React.FC = () => {
     } catch (err) {
       console.error("Error deleting item:", err);
       alert("Error deleting item");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -571,6 +599,11 @@ const InventoryManagement: React.FC = () => {
     }
   };
 
+  // Show loader while initial data is loading
+  if (isLoading) {
+    return <Loader />;
+  }
+
   // UI
   return (
     <div className="space-y-6 p-4 max-w-7xl mx-auto">
@@ -681,9 +714,14 @@ const InventoryManagement: React.FC = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDelete(item.id)}
+                          disabled={isDeleting}
                           className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {isDeleting ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-red-600 border-solid"></div>
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </td>
@@ -978,8 +1016,19 @@ const InventoryManagement: React.FC = () => {
             <Button variant="outline" onClick={handleCloseModal}>
               Cancel
             </Button>
-            <Button onClick={handleSave} className="bg-[#15803d] hover:bg-[#15803d]">
-              {editingItem ? "Update Item" : "Add Item"}
+            <Button 
+              onClick={handleSave} 
+              disabled={isSaving}
+              className="bg-[#15803d] hover:bg-[#15803d]"
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white border-solid mr-2"></div>
+                  {editingItem ? "Updating..." : "Adding..."}
+                </>
+              ) : (
+                editingItem ? "Update Item" : "Add Item"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1033,8 +1082,19 @@ const InventoryManagement: React.FC = () => {
             <Button variant="outline" onClick={handleCloseUsageModal}>
               Cancel
             </Button>
-            <Button onClick={handleUsageSave} className="bg-[#15803d] hover:bg-[#15803d]">
-              Record Usage
+            <Button 
+              onClick={handleUsageSave} 
+              disabled={isSaving}
+              className="bg-[#15803d] hover:bg-[#15803d]"
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white border-solid mr-2"></div>
+                  Recording...
+                </>
+              ) : (
+                "Record Usage"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

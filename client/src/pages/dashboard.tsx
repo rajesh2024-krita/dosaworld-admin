@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [inventoryData, setInventoryData] = useState<any[]>([]);
   const [reservationData, setReservationData] = useState<any[]>([]);
   const [period, setPeriod] = useState("today");
+  const [loading, setLoading] = useState(true); // NEW
 
   const periodOptions = [
     { value: "today", label: "Daily" },
@@ -33,39 +34,29 @@ export default function Dashboard() {
 
   // Fetch data
   useEffect(() => {
-    const fetchBillingData = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await axios.get(API_BILLING_URL);
-        setBillingData(res.data?.data || []);
+        setLoading(true);
+        const [billingRes, inventoryRes, reservationRes] = await Promise.all([
+          axios.get(API_BILLING_URL),
+          axios.get(API_INVENTORY_URL),
+          axios.get(API_RESERVATION_URL),
+        ]);
+
+        setBillingData(billingRes.data?.data || []);
+        setInventoryData(inventoryRes.data?.data || []);
+        setReservationData(reservationRes.data || []);
       } catch (err) {
-        console.error("Failed to fetch billing data:", err);
+        console.error("Failed to fetch data:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    const fetchInventoryData = async () => {
-      try {
-        const res = await axios.get(API_INVENTORY_URL);
-        setInventoryData(res.data?.data || []);
-      } catch (err) {
-        console.error("Failed to fetch inventory data:", err);
-      }
-    };
-
-    const fetchReservationData = async () => {
-      try {
-        const res = await axios.get(API_RESERVATION_URL);
-        setReservationData(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch reservation data:", err);
-      }
-    };
-
-    fetchBillingData();
-    fetchInventoryData();
-    fetchReservationData();
+    fetchAll();
   }, []);
 
-  // Group data by period
+  // Group by period
   const groupByPeriod = (arr: any[], period: string, type: "billing" | "inventory" | "reservation") => {
     const grouped: Record<string, any> = {};
     const now = dayjs();
@@ -151,6 +142,14 @@ export default function Dashboard() {
   const totalExpenses = billingRows.reduce((a, r) => a + Number(r.Expenses || 0), 0);
   const totalInventory = inventoryRows.reduce((a, r) => a + Number(r.Inventory || 0), 0);
   const totalReservations = reservationRows.reduce((a, r) => a + Number(r.Reservations || 0), 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-green-600 border-solid"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

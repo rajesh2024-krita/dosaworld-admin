@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, Edit, Trash2, Plus, ChevronLeft, ChevronRight } from "lucide-react"
+import Loader from "@/components/Loader"
 
 interface Reservation {
   id?: number
@@ -55,50 +56,45 @@ export default function ReservationPage() {
   const [reservationPage, setReservationPage] = useState(1)
   const reservationsPerPage = 5
 
+  const [loading, setLoading] = useState(false) // loader state
+
   const API_URL = "https://dosaworld-backend-xypt.onrender.com/api/reservations"
   const SLOT_API = "https://dosaworld-backend-xypt.onrender.com/api/timeslots"
 
+  // -------------------- Fetch Reservations --------------------
   const fetchReservations = async () => {
     try {
+      setLoading(true)
       const res = await axios.get(API_URL)
       setReservations(res.data)
       setFilteredReservations(res.data)
     } catch (err) {
       console.error("Error fetching reservations:", err)
+    } finally {
+      setLoading(false)
     }
   }
 
+  // -------------------- Fetch Time Slots --------------------
   const fetchSlots = async () => {
     try {
+      setLoading(true)
       const res = await axios.get(SLOT_API)
       setTimeSlots(res.data)
     } catch (err) {
       console.error("Error fetching slots:", err)
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => { fetchReservations() }, [])
   useEffect(() => { fetchSlots() }, [])
 
-  const handleSlotSubmit = async () => {
-    if (editSlotId) {
-      await axios.put(`${SLOT_API}/${editSlotId}`, slotForm)
-    } else {
-      await axios.post(SLOT_API, slotForm)
-    }
-    setSlotForm({ start_time: "", end_time: "" })
-    setEditSlotId(null)
-    setOpenSlotForm(false)
-    fetchSlots()
-  }
-
-  const handleSlotDelete = async (id: number) => {
-    await axios.delete(`${SLOT_API}/${id}`)
-    fetchSlots()
-  }
-
+  // -------------------- Reservation Actions --------------------
   const handleSubmit = async () => {
     try {
+      setLoading(true)
       if (editId) {
         await axios.put(`${API_URL}/${editId}`, form)
       } else {
@@ -107,27 +103,64 @@ export default function ReservationPage() {
       setForm({ first_name: "", last_name: "", phone: "", email: "", party_size: 1, date: "", time: "" })
       setEditId(null)
       setOpenForm(false)
-      fetchReservations()
+      await fetchReservations()
     } catch (err) {
       console.error("Error saving reservation:", err)
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleDelete = async (id: number) => {
     try {
+      setLoading(true)
       await axios.delete(`${API_URL}/${id}`)
-      fetchReservations()
+      await fetchReservations()
     } catch (err) {
       console.error("Error deleting reservation:", err)
+    } finally {
+      setLoading(false)
     }
   }
 
-  // Search reservations by first name, last name, or formatted date
+  // -------------------- Time Slot Actions --------------------
+  const handleSlotSubmit = async () => {
+    try {
+      setLoading(true)
+      if (editSlotId) {
+        await axios.put(`${SLOT_API}/${editSlotId}`, slotForm)
+      } else {
+        await axios.post(SLOT_API, slotForm)
+      }
+      setSlotForm({ start_time: "", end_time: "" })
+      setEditSlotId(null)
+      setOpenSlotForm(false)
+      await fetchSlots()
+    } catch (err) {
+      console.error("Error saving slot:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSlotDelete = async (id: number) => {
+    try {
+      setLoading(true)
+      await axios.delete(`${SLOT_API}/${id}`)
+      await fetchSlots()
+    } catch (err) {
+      console.error("Error deleting slot:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // -------------------- Search & Pagination --------------------
   useEffect(() => {
     const query = searchQuery.toLowerCase()
     const filtered = reservations.filter((r) => {
-      const fullDate1 = new Date(r.date).toLocaleDateString("en-GB") // dd/mm/yyyy
-      const fullDate2 = new Date(r.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) // dd MMM yyyy
+      const fullDate1 = new Date(r.date).toLocaleDateString("en-GB")
+      const fullDate2 = new Date(r.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
       return (
         r.first_name.toLowerCase().includes(query) ||
         r.last_name.toLowerCase().includes(query) ||
@@ -139,11 +172,14 @@ export default function ReservationPage() {
     setReservationPage(1)
   }, [searchQuery, reservations])
 
-  // Pagination
   const totalReservationPages = Math.ceil(filteredReservations.length / reservationsPerPage)
   const startIndex = (reservationPage - 1) * reservationsPerPage
   const paginatedReservations = filteredReservations.slice(startIndex, startIndex + reservationsPerPage)
 
+  // -------------------- Loader Render --------------------
+  if (loading) return <Loader />
+
+  // -------------------- Main Render --------------------
   return (
     <div className="space-y-6">
       {/* Reservations Table */}
