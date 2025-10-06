@@ -27,6 +27,7 @@ import ProtectedRoute from "@/components/auth/protected-route";
 import ReservationPage from "./pages/Reservation";
 import EODBilling from "./pages/EODBilling";
 import InventoryManagement from "./pages/InventoryManagement";
+import OfferMaganement from "./pages/OfferManagement";
 
 function DashboardLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -143,6 +144,14 @@ function AuthenticatedRoutes() {
         <DashboardLayout title="Inventory Management">
           <ProtectedRoute requiredPermission="billing:read">
             <InventoryManagement />
+          </ProtectedRoute>
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/offer-management">
+        <DashboardLayout title="Offer Management">
+          <ProtectedRoute requiredPermission="billing:read">
+            <OfferMaganement />
           </ProtectedRoute>
         </DashboardLayout>
       </Route>

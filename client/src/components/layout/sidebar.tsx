@@ -45,6 +45,12 @@ const menuItems = [
         icon: CalendarCheck,
         permission: "billing:read" as const,
       },
+      {
+        name: "Offer Management",
+        path: "/offer-management",
+        icon: CalendarCheck,
+        permission: "billing:read" as const,
+      },
     ],
   },
   // {
