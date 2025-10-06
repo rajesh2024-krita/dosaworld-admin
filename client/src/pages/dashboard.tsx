@@ -168,18 +168,18 @@ export default function Dashboard() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card><CardHeader><CardTitle className="text-md font-medium">Total Income</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">€{totalIncome.toFixed(2)}</p></CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-md font-medium">Total Expenses</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">€{totalExpenses.toFixed(2)}</p></CardContent></Card>
         <Card><CardHeader><CardTitle className="text-md font-medium">Total Inventory Used</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{totalInventory}</p></CardContent></Card>
         <Card><CardHeader><CardTitle className="text-md font-medium">Total Reservations</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{totalReservations}</p></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-md font-medium">Total Income</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">€{totalIncome.toFixed(2)}</p></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-md font-medium">Total Expenses</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">€{totalExpenses.toFixed(2)}</p></CardContent></Card>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {renderChart("Income", "Income", billingRows)}
-        {renderChart("Expenses", "Expenses", billingRows)}
-        {renderChart("Inventory Usage", "Inventory", inventoryRows)}
         {renderChart("Reservations", "Reservations", reservationRows)}
+        {renderChart("Income", "Income", billingRows)}
+        {renderChart("Inventory Usage", "Inventory", inventoryRows)}
+        {renderChart("Expenses", "Expenses", billingRows)}
       </div>
     </div>
   );

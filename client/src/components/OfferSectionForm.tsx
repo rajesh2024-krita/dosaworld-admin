@@ -155,11 +155,11 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({ section, onSave, on
             </div>
 
             <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3 text-gray-800">Buckets</h3>
+                <h3 className="text-lg font-semibold mb-3 text-gray-800">Offer Items</h3>
                 {formData.buckets.map((bucket: any, index: number) => (
                     <div key={index} className="mb-4 p-4 border rounded-lg bg-gray-50">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="font-semibold">Bucket {index + 1}</span>
+                            <span className="font-semibold">Item {index + 1}</span>
                             {formData.buckets.length > 1 && (
                                 <button type="button" onClick={() => removeBucket(index)} className="text-red-500 hover:underline">
                                     Remove
