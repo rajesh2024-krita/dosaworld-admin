@@ -52,19 +52,19 @@ const OfferSectionList: React.FC = () => {
     handleFormClose();
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="text-lg text-gray-600">Loading offer sections...</div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex justify-center items-center min-h-64">
+  //       <div className="text-lg text-gray-600">Loading offer sections...</div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Offer Sections</h1>
+          <h2 className="text-3xl font-bold text-gray-900">Offer Sections</h2>
           <p className="text-gray-600 mt-2">Manage your restaurant offer sections and bucket deals</p>
         </div>
         <button
@@ -138,7 +138,7 @@ const OfferSectionList: React.FC = () => {
                   <span className="text-blue-600">Has Background Image</span>
                 )}
                 {section.biryaniImage && (
-                  <span className="text-purple-600">Has Biryani Image</span>
+                  <span className="text-purple-600">Has Item Image</span>
                 )}
               </div>
               <span>Created: {new Date(section.createdAt!).toLocaleDateString()}</span>

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { OfferSection } from '../Types/OfferSection';
 import { offerSectionService } from '../Services/offerSectionService';
+import Swal from "sweetalert2"
+import withReactContent from "sweetalert2-react-content"
+
+const MySwal = withReactContent(Swal)
 
 interface OfferSectionFormProps {
     section?: OfferSection;
@@ -14,38 +18,78 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({ section, onSave, on
         subtitle: '',
         description: '',
         buckets: [{ name: '', people: '', price: '' }],
-        backgroundImage: null,
+        // backgroundImage: null,
         biryaniImage: null,
         isActive: true
     });
     const [loading, setLoading] = useState(false);
-    const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null);
+    // const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null);
     const [biryaniPreview, setBiryaniPreview] = useState<string | null>(null);
 
+    // useEffect(() => {
+    //     if (section) {
+    //         setFormData({
+    //             title: section.title,
+    //             subtitle: section.subtitle,
+    //             description: section.description,
+    //             buckets: Array.isArray(section.buckets)
+    //                 ? section.buckets
+    //                 : Object.values(section.buckets),
+    //             backgroundImage: null,
+    //             biryaniImage: null,
+    //             isActive: section.isActive
+    //         });
+    //         setBackgroundPreview(section.backgroundImage || null);
+    //         setBiryaniPreview(section.biryaniImage || null);
+    //     }
+    // }, [section]);
+
     useEffect(() => {
-        if (section) {
-            setFormData({
-                title: section.title,
-                subtitle: section.subtitle,
-                description: section.description,
-                buckets: Array.isArray(section.buckets)
-                    ? section.buckets
-                    : Object.values(section.buckets),
-                backgroundImage: null,
-                biryaniImage: null,
-                isActive: section.isActive
-            });
-            setBackgroundPreview(section.backgroundImage || null);
-            setBiryaniPreview(section.biryaniImage || null);
-        }
-    }, [section]);
+  if (section) {
+    setFormData({
+      title: section.title,
+      subtitle: section.subtitle,
+      description: section.description,
+      buckets: Array.isArray(section.buckets)
+        ? section.buckets
+        : Object.values(section.buckets),
+    //   backgroundImage: null,
+      biryaniImage: null,
+      isActive: section.isActive
+    });
+
+    // ✅ Base URL only for images
+    const IMAGE_BASE_URL = "https://dosaworldadmin.kritatechnosolutions.com";
+
+    // ✅ Handle background image URL
+    // if (section.backgroundImage) {
+    //   const bgUrl = section.backgroundImage.startsWith("http")
+    //     ? section.backgroundImage
+    //     : `${IMAGE_BASE_URL}${section.backgroundImage}`;
+    //   setBackgroundPreview(bgUrl);
+    // } else {
+    //   setBackgroundPreview(null);
+    // }
+
+    // ✅ Handle biryani image URL
+    if (section.biryaniImage) {
+      const biryaniUrl = section.biryaniImage.startsWith("http")
+        ? section.biryaniImage
+        : `${IMAGE_BASE_URL}${section.biryaniImage}`;
+      setBiryaniPreview(biryaniUrl);
+    } else {
+      setBiryaniPreview(null);
+    }
+  }
+}, [section]);
+
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
         if (e.target.files && e.target.files[0]) {
             setFormData((prev: any) => ({ ...prev, [field]: e.target.files![0] }));
             const reader = new FileReader();
             reader.onload = () => {
-                if (field === 'backgroundImage') setBackgroundPreview(reader.result as string);
+                // if (field === 'backgroundImage') setBackgroundPreview(reader.result as string);
                 if (field === 'biryaniImage') setBiryaniPreview(reader.result as string);
             };
             reader.readAsDataURL(e.target.files[0]);
@@ -83,9 +127,9 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({ section, onSave, on
             data.append('description', formData.description);
             data.append('isActive', String(formData.isActive));
 
-            if (formData.backgroundImage instanceof File) {
-                data.append('backgroundImage', formData.backgroundImage);
-            }
+            // if (formData.backgroundImage instanceof File) {
+            //     data.append('backgroundImage', formData.backgroundImage);
+            // }
             if (formData.biryaniImage instanceof File) {
                 data.append('biryaniImage', formData.biryaniImage);
             }
@@ -102,7 +146,12 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({ section, onSave, on
             onSave();
         } catch (err) {
             console.error('Error saving offer section:', err);
-            alert('Error saving offer section');
+            // alert('Error saving offer section');
+            MySwal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: "Error saving offer section",
+            })
         } finally {
             setLoading(false);
         }
@@ -179,13 +228,13 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({ section, onSave, on
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
+                {/* <div>
                     <label className="block mb-2 text-gray-700">Background Image</label>
                     <input type="file" onChange={(e) => handleFileChange(e, 'backgroundImage')} />
                     {backgroundPreview && <img src={backgroundPreview} alt="preview" className="mt-2 w-32 rounded" />}
-                </div>
+                </div> */}
                 <div>
-                    <label className="block mb-2 text-gray-700">Biryani Image</label>
+                    <label className="block mb-2 text-gray-700">Item Image</label>
                     <input type="file" onChange={(e) => handleFileChange(e, 'biryaniImage')} />
                     {biryaniPreview && <img src={biryaniPreview} alt="preview" className="mt-2 w-32 rounded" />}
                 </div>

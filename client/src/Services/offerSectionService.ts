@@ -10,9 +10,11 @@ const api = axios.create({
 // Send FormData when creating/updating offer section
 export const offerSectionService = {
   create: async (sectionData: FormData): Promise<ApiResponse<OfferSection>> => {
+    console.log(FormData);
     const response = await api.post('/offer-sections', sectionData, {
       headers: { 'Content-Type': 'multipart/form-data' }, // important!
     });
+    console.log(response);
     return response.data;
   },
 

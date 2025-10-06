@@ -33,6 +33,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Swal from "sweetalert2"
+import withReactContent from "sweetalert2-react-content"
+
+const MySwal = withReactContent(Swal)
 
 // Loader Component
 const Loader: React.FC = () => {
@@ -412,13 +416,30 @@ const InventoryManagement: React.FC = () => {
       if (res.data.success) {
         handleCloseModal();
         await fetchInventory();
-        alert(res.data.message || "Item saved successfully");
+        // alert(res.data.message || "Item saved successfully");
+        MySwal.fire({
+          icon: "success", // ✅ change to success
+          title: "Success!",
+          text: res.data.message || "Item saved successfully",
+          confirmButtonColor: "#15803d" // optional: custom green color
+        })
+
       } else {
-        alert(res.data.message || "Failed to save item");
+        // alert(res.data.message || "Failed to save item");
+        MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: res.data.message || "Failed to save item",
+        })
       }
     } catch (err: any) {
-      console.error("Error saving item:", err);
-      alert(err.response?.data?.message || "Error saving item");
+      // console.error("Error saving item:", err);
+      // alert(err.response?.data?.message || "Error saving item");
+      MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: err.response?.data?.message || "Error saving item",
+        })
     } finally {
       setIsSaving(false);
     }
@@ -426,8 +447,20 @@ const InventoryManagement: React.FC = () => {
 
   // Handle Save Usage
   const handleUsageSave = async () => {
-    if (!usageForm.inventoryId) return alert("Please select a valid product");
-    if (usageForm.usedQty <= 0) return alert("Please enter a valid quantity");
+    if (!usageForm.inventoryId) 
+      return MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Please a select valid product",
+        })
+    // alert("Please select a valid product");
+    if (usageForm.usedQty <= 0) 
+      return MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Please enter a valid quantity ",
+        })
+    // alert("Please enter a valid quantity");
 
     try {
       setIsSaving(true);
@@ -442,13 +475,29 @@ const InventoryManagement: React.FC = () => {
         await fetchInventory();
         await fetchUsage();
         handleCloseUsageModal();
-        alert(res.data.message || "Usage recorded successfully");
+        // alert(res.data.message || "Usage recorded successfully");
+        MySwal.fire({
+          icon: "success", // ✅ change to success
+          title: "Success!",
+          text: res.data.message || "Usage recorded successfully",
+          confirmButtonColor: "#15803d" // optional: custom green color
+        })
       } else {
-        alert(res.data.message || "Failed to record usage");
+        // alert(res.data.message || "Failed to record usage");
+        MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: res.data.message || "Failed to record usage",
+        })
       }
     } catch (err: any) {
       console.error("Error recording usage:", err);
-      alert(err.response?.data?.message || "Error recording usage");
+      // alert(err.response?.data?.message || "Error recording usage");
+      MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: err.response?.data?.message || "Error recording usage",
+        })
     } finally {
       setIsSaving(false);
     }
@@ -462,13 +511,29 @@ const InventoryManagement: React.FC = () => {
       const res = await api.delete(`/inventory/${id}`);
       if (res.data.success) {
         await fetchInventory();
-        alert(res.data.message || "Item deleted successfully");
+        // alert(res.data.message || "Item deleted successfully");
+        MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: res.data.message || "Item deleted successfully",
+        })
+
       } else {
-        alert(res.data.message || "Failed to delete item");
+        // alert(res.data.message || "Failed to delete item");
+        MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: res.data.message || "Failed to delete item",
+        })
       }
     } catch (err) {
       console.error("Error deleting item:", err);
-      alert("Error deleting item");
+      // alert("Error deleting item");
+      MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Error deleting item",
+        })
     } finally {
       setIsDeleting(false);
     }

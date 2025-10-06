@@ -40,6 +40,10 @@ import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import Loader from "@/components/Loader";
+import Swal from "sweetalert2"
+import withReactContent from "sweetalert2-react-content"
+
+const MySwal = withReactContent(Swal)
 
 dayjs.extend(isoWeek);
 dayjs.extend(customParseFormat);
@@ -104,7 +108,12 @@ export default function EODBilling() {
       });
     } catch (err) {
       console.error(err);
-      alert("Failed to save entry");
+      // alert("Failed to save entry");
+      MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Failed to save entry",
+        })
     } finally {
       setLoading(false);
     }

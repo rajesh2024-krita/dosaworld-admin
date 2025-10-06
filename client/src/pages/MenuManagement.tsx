@@ -15,6 +15,11 @@ import { Trash2, Edit, Eye, ChevronLeft, ChevronRight, Search } from "lucide-rea
 import { Combobox } from "@headlessui/react"
 import { api } from "@/lib/axios"
 import Loader from "@/components/Loader"
+import Swal from "sweetalert2"
+import withReactContent from "sweetalert2-react-content"
+
+const MySwal = withReactContent(Swal)
+
 
 
 type Category = {
@@ -168,7 +173,13 @@ export default function MenuManagement() {
       e.currentTarget.reset()
     } catch (err) {
       console.error("❌ Error creating category:", err)
-      alert("Failed to create category")
+      // alert("Failed to create category")
+      MySwal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to create category",
+      })
+
     } finally {
       setIsLoading(false)
     }
@@ -197,7 +208,13 @@ export default function MenuManagement() {
       setSelectedCategory(null)
     } catch (err) {
       console.error("❌ Error updating category:", err)
-      alert("Failed to update category")
+      // alert("Failed to update category")
+      MySwal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to update category",
+      })
+
     } finally {
       setIsLoading(false)
     }
@@ -211,7 +228,13 @@ export default function MenuManagement() {
         fetchItems()
       } catch (err) {
         console.error("Error deleting category:", err)
-        alert("Failed to delete category")
+        // alert("Failed to delete category")
+        MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Failed to delete category",
+        })
+
       }
     }
   }
@@ -219,7 +242,14 @@ export default function MenuManagement() {
   // ================== ITEM CRUD ==================
   const handleCreateItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!selectedItemCategory) return alert("Please select a category")
+    if (!selectedItemCategory) 
+      return MySwal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Please select a category",
+      })
+
+    // alert("Please select a category")
     if (isLoading) return
 
     setIsLoading(true)
@@ -240,7 +270,13 @@ export default function MenuManagement() {
       setSelectedItemCategory(null)
     } catch (err) {
       console.error("❌ Error creating item:", err)
-      alert("Failed to create item")
+      // alert("Failed to create item")
+      MySwal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to create item",
+      })
+
     } finally {
       setIsLoading(false)
     }
@@ -267,7 +303,13 @@ export default function MenuManagement() {
       setSelectedItem(null)
     } catch (err) {
       console.error("Error updating item:", err)
-      alert("Failed to update item")
+      // alert("Failed to update item")
+      MySwal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to update item",
+      })
+
     } finally {
       setIsLoading(false)
     }
@@ -280,7 +322,13 @@ export default function MenuManagement() {
         fetchItems()
       } catch (err) {
         console.error("Error deleting item:", err)
-        alert("Failed to delete item")
+        // alert("Failed to delete item")
+        MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Failed to delete item",
+        })
+
       }
     }
   }
