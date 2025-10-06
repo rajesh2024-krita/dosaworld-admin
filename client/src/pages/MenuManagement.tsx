@@ -410,7 +410,7 @@ export default function MenuManagement() {
                             <td className="p-2">{getSerial(idx, itemPage, itemsPerPage)}</td>
                             <td className="p-2">{it.code}</td>
                             <td className="p-2">{it.name}</td>
-                            <td className="p-2">₹{it.price}</td>
+                            <td className="p-2">€{it.price}</td>
                             <td className="p-2">{cat?.name}</td>
                             <td className="p-2 flex gap-1">
                               <Button size="sm" variant="outline"
@@ -421,7 +421,7 @@ export default function MenuManagement() {
                                 <Trash2 />
                               </Button>
                               <Button size="sm" variant="outline"
-                                onClick={() => { setSelectedItem(it); setIsViewItemOpen(true) }}>
+                                onClick={() => { setSelectedItem(it); setIsViewItemOpen(true);}}>
                                 <Eye />
                               </Button>
                             </td>
@@ -489,7 +489,7 @@ export default function MenuManagement() {
             </div>
           )}
 
-          {/* ================= EDIT ITEM MODAL ================= */}
+          {/* ================= EDIT ITEM MODAL =================
           <Dialog open={isEditItemOpen} onOpenChange={setIsEditItemOpen}>
             <DialogContent className="sm:max-w-md">
               {selectedItem && (
@@ -523,7 +523,83 @@ export default function MenuManagement() {
                 </form>
               )}
             </DialogContent>
+          </Dialog> */}
+
+          {/* ================= EDIT / VIEW ITEM MODAL ================= */}
+          <Dialog open={isEditItemOpen || isViewItemOpen} onOpenChange={(open) => {
+            if (!open) {
+              setIsEditItemOpen(false);
+              setIsViewItemOpen(false);
+              setSelectedItem(null);
+            }
+          }}>
+            <DialogContent className="sm:max-w-md">
+              {selectedItem && (
+                <form
+                  className="space-y-2"
+                  onSubmit={isViewItemOpen ? (e) => e.preventDefault() : handleEditItem}
+                >
+                  <Input
+                    name="code"
+                    defaultValue={selectedItem.code}
+                    required
+                    readOnly={isViewItemOpen}
+                  />
+                  <Input
+                    name="name"
+                    defaultValue={selectedItem.name}
+                    required
+                    readOnly={isViewItemOpen}
+                  />
+                  <Textarea
+                    name="description"
+                    defaultValue={selectedItem.description}
+                    readOnly={isViewItemOpen}
+                  />
+                  <Input
+                    name="price"
+                    type="number"
+                    defaultValue={selectedItem.price}
+                    required
+                    readOnly={isViewItemOpen}
+                  />
+                  <Combobox
+                    value={selectedItemCategory}
+                    onChange={setSelectedItemCategory}
+                    readOnly={isViewItemOpen}
+                  >
+                    <div className="relative">
+                      <Combobox.Input
+                        className="w-full border px-2 py-1 rounded disabled:bg-gray-100"
+                        onChange={(e) => setCategoryQuery(e.target.value)}
+                        displayValue={(cat: Category | null) => cat?.name ?? ""}
+                        placeholder="Select Category"
+                        readOnly={isViewItemOpen}
+                      />
+                      {!isViewItemOpen && (
+                        <Combobox.Options className="absolute z-10 w-full bg-white border rounded mt-1 max-h-48 overflow-y-auto">
+                          {categories
+                            .filter(c => c.name.toLowerCase().includes(categoryQuery.toLowerCase()))
+                            .map(c => (
+                              <Combobox.Option key={c.id} value={c} className="px-2 py-1 hover:bg-green-100">
+                                {c.name}
+                              </Combobox.Option>
+                            ))}
+                        </Combobox.Options>
+                      )}
+                    </div>
+                  </Combobox>
+
+                  {!isViewItemOpen && (
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Saving..." : "Save"}
+                    </Button>
+                  )}
+                </form>
+              )}
+            </DialogContent>
           </Dialog>
+
 
           {/* ================= CATEGORIES TAB ================= */}
           {activeTab === "categories" && (
@@ -676,16 +752,22 @@ export default function MenuManagement() {
           )}
 
           {/* ================= EDIT CATEGORY MODAL ================= */}
-          <Dialog open={isEditCategoryOpen} onOpenChange={setIsEditCategoryOpen}>
+          <Dialog open={isEditCategoryOpen || isViewCategoryOpen} onOpenChange={(open) => {
+            if (!open) {
+              setIsEditCategoryOpen(false);
+              setIsViewCategoryOpen(false);
+              setSelectedCategory(null);
+            }
+          }}>
             <DialogContent className="sm:max-w-md">
               {selectedCategory && (
                 <form className="space-y-2" onSubmit={handleEditCategory}>
-                  <Input name="name" defaultValue={selectedCategory.name} required />
-                  <Textarea name="description" defaultValue={selectedCategory.description} />
-                  <Input type="file" name="imageFile" accept="image/*" />
+                  <Input name="name" defaultValue={selectedCategory.name} required readOnly={isViewCategoryOpen} />
+                  <Textarea name="description" defaultValue={selectedCategory.description} readOnly={isViewCategoryOpen} />
+                  <Input type="file" name="imageFile" accept="image/*" readOnly={isViewCategoryOpen} />
                   {selectedCategory.image && (
-                    <div className="text-sm text-gray-500">
-                      Current image: <img src={selectedCategory.image} alt="Current" className="w-12 h-12 object-cover mt-1" />
+                    <div className="text-sm text-gray-500" >
+                      Current image: <img src={selectedCategory.image} alt="Current" className="w-12 h-12 object-cover mt-1"  />
                     </div>
                   )}
                   <Button

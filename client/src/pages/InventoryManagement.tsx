@@ -236,6 +236,8 @@ const InventoryManagement: React.FC = () => {
   const [usageDateFilter, setUsageDateFilter] = useState("all");
   const [usagePage, setUsagePage] = useState(1);
 
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | undefined>();
+
   // Analytics
   const [analyticsPeriod, setAnalyticsPeriod] = useState<
     "daily" | "weekly" | "monthly" | "yearly" | "fiveYear" | "all"
@@ -433,6 +435,7 @@ const InventoryManagement: React.FC = () => {
         inventoryId: usageForm.inventoryId,
         usedQty: usageForm.usedQty,
         date: new Date().toISOString(),
+        product: selectedItem?.product || ""
       });
 
       if (res.data.success) {
@@ -1048,21 +1051,27 @@ const InventoryManagement: React.FC = () => {
               <Label htmlFor="inventoryId" className="text-sm font-medium">
                 Product
               </Label>
-              <Select 
-                value={usageForm.inventoryId.toString()} 
-                onValueChange={(value) => setUsageForm({ ...usageForm, inventoryId: Number(value) })}
+              <Select
+                value={usageForm.inventoryId.toString()}
+                onValueChange={(value) => {
+                  const selected = data.find(item => item.id === Number(value));
+                  if (selected) setSelectedItem(selected);
+                  setUsageForm({ ...usageForm, inventoryId: Number(value) });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a product" />
                 </SelectTrigger>
                 <SelectContent>
-                  {data.filter(item => Number(item.qty) > 0).map((item) => (
-                    <SelectItem key={item.id} value={item.id.toString()}>
-                      {item.product} (Stock: {item.qty})
-                    </SelectItem>
-                  ))}
+                  {data
+                    .filter(item => Number(item.qty) > 0)
+                    .map((item) => (
+                      <SelectItem key={item.id} value={item.id.toString()}>
+                        {item.product}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
-              </Select>
+              </Select> 
             </div>
             <div className="space-y-2">
               <Label htmlFor="usedQty" className="text-sm font-medium">
