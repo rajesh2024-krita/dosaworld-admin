@@ -512,11 +512,12 @@ const InventoryManagement: React.FC = () => {
       if (res.data.success) {
         await fetchInventory();
         // alert(res.data.message || "Item deleted successfully");
-        MySwal.fire({
-          icon: "error",
-          title: "Oops...",
-          text: res.data.message || "Item deleted successfully",
-        })
+       MySwal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: res.data.message || "Item deleted successfully.",
+        });
+
 
       } else {
         // alert(res.data.message || "Failed to delete item");
@@ -990,7 +991,7 @@ const InventoryManagement: React.FC = () => {
 
       {/* Inventory Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] h-[86%] overflow-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">
               {editingItem ? "Edit Inventory Item" : "Add New Inventory Item"}
@@ -1104,7 +1105,7 @@ const InventoryManagement: React.FC = () => {
 
       {/* Usage Modal */}
       <Dialog open={isUsageModalOpen} onOpenChange={setIsUsageModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] h-[86%] overflow-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">Record Product Usage</DialogTitle>
             <DialogDescription>

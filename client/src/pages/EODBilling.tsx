@@ -359,7 +359,15 @@ export default function EODBilling() {
           <DialogHeader><DialogTitle>Add EOD Billing Entry</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-              <div><label className="text-sm font-medium">Date</label><Input name="date" type="date" value={form.date} onChange={handleChange} readOnly /></div>
+              <div><label className="text-sm font-medium">Date</label><Input
+              name="date"
+              type="date"
+              value={form.date}
+              onChange={handleChange}
+              readOnly={false} // make sure user can select
+              max={new Date().toISOString().split("T")[0]} // today's date in YYYY-MM-DD format
+            />
+            </div>
               <div><label className="text-sm font-medium">Handled By</label><Input name="handledBy" placeholder="Name" value={form.handledBy} onChange={handleChange} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
