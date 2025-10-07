@@ -91,33 +91,42 @@ export default function EODBilling() {
 
   // Submit new entry
   const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      await axios.post(API_URL, form);
-      await fetchData();
-      setOpen(false);
-      setForm({
-        date: new Date().toISOString().split("T")[0],
-        card: "",
-        cash: "",
-        handledBy: "",
-        trinkgeld: "",
-        trinkgeldBar: "",
-        paid: "",
-      });
-    } catch (err) {
-      console.error(err);
-      // alert("Failed to save entry");
-      MySwal.fire({
-          icon: "error",
-          title: "Oops...",
-          text: "Failed to save entry",
-        })
-    } finally {
-      setLoading(false);
-    }
-  };
+  e.preventDefault();
+  try {
+    setLoading(true);
+    await axios.post(API_URL, form);
+
+    // Show success alert
+    await MySwal.fire({
+      icon: "success",
+      title: "Saved!",
+      text: "Entry has been saved successfully.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    await fetchData();
+    setOpen(false);
+    setForm({
+      date: new Date().toISOString().split("T")[0],
+      card: "",
+      cash: "",
+      handledBy: "",
+      trinkgeld: "",
+      trinkgeldBar: "",
+      paid: "",
+    });
+  } catch (err) {
+    console.error(err);
+    await MySwal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: "Failed to save entry",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Export CSV
   const downloadReport = () => {

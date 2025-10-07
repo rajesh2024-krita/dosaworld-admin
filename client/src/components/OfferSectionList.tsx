@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { OfferSection } from '../Types/OfferSection';
 import { offerSectionService } from '../Services/offerSectionService';
 import OfferSectionForm from './OfferSectionForm';
+import { Button } from './ui/button';
+import { Edit, Trash2 } from 'lucide-react';
 
 const OfferSectionList: React.FC = () => {
   const [sections, setSections] = useState<OfferSection[]>([]);
@@ -61,18 +63,18 @@ const OfferSectionList: React.FC = () => {
   // }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Offer Sections</h2>
-          <p className="text-gray-600 mt-2">Manage your restaurant offer sections and bucket deals</p>
+          <h2 className="text-lg font-semibold tracking-tight uppercase">Offer Sections</h2>
+          {/* <p className="text-gray-600 mt-2">Manage your restaurant offer sections and bucket deals</p> */}
         </div>
-        <button
+        <Button
           onClick={() => setShowForm(true)}
           className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
         >
           + Create New Offer Section
-        </button>
+        </Button>
       </div>
 
       {showForm && (
@@ -87,29 +89,31 @@ const OfferSectionList: React.FC = () => {
 
       <div className="grid gap-6">
         {sections.map((section) => (
-          <div key={section._id} className="border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow bg-white">
+          <div key={section._id} className="border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow bg-white">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">{section.title}</h2>
-                <p className="text-gray-600 mt-1">{section.subtitle}</p>
+                <h2 className="text-lg font-semibold text-gray-900">{section.title}</h2>
+                <p className="text-gray-600 mt-1 text-xs">{section.subtitle}</p>
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={() => handleEdit(section)}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors font-medium"
                 >
-                  Edit
-                </button>
-                <button
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={() => handleDelete(section._id!)}
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600 transition-colors font-medium"
                 >
-                  Delete
-                </button>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
-            <p className="text-gray-700 mb-4">{section.description}</p>
+            <p className="text-gray-700 mb-4 text-sm">{section.description}</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
               {['S', 'M'].map((size) => {
@@ -152,12 +156,12 @@ const OfferSectionList: React.FC = () => {
           <div className="text-gray-400 text-6xl mb-4">🎯</div>
           <h3 className="text-xl font-semibold text-gray-600 mb-2">No offer sections found</h3>
           <p className="text-gray-500 mb-6">Create your first offer section to showcase your restaurant deals!</p>
-          <button
+          <Button
             onClick={() => setShowForm(true)}
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+            className="bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
           >
             Create Your First Offer Section
-          </button>
+          </Button>
         </div>
       )}
     </div>

@@ -12,6 +12,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, Edit, Trash2, Plus, ChevronLeft, ChevronRight } from "lucide-react"
 import Loader from "@/components/Loader"
+import Swal from "sweetalert2"
+import withReactContent from "sweetalert2-react-content"
+
+const MySwal = withReactContent(Swal)
 
 interface Reservation {
   id?: number
@@ -58,12 +62,12 @@ export default function ReservationPage() {
 
   const [loading, setLoading] = useState(false) // loader state
 
-  // const API_URL = "https://dosaworld-backend-xypt.onrender.com/api/reservations"
-  // const SLOT_API = "https://dosaworld-backend-xypt.onrender.com/api/timeslots"
+  const API_URL = "https://dosaworld-backend-xypt.onrender.com/api/reservations"
+  const SLOT_API = "https://dosaworld-backend-xypt.onrender.com/api/timeslots"
 
   
-  const API_URL = "http://localhost:3000/api/reservations"
-  const SLOT_API = "http://localhost:3000/api/timeslots"
+  // const API_URL = "http://localhost:3000/api/reservations"
+  // const SLOT_API = "http://localhost:3000/api/timeslots"
 
   // -------------------- Fetch Reservations --------------------
   const fetchReservations = async () => {
@@ -97,67 +101,170 @@ export default function ReservationPage() {
 
   // -------------------- Reservation Actions --------------------
   const handleSubmit = async () => {
-    try {
-      setLoading(true)
-      if (editId) {
-        await axios.put(`${API_URL}/${editId}`, form)
-      } else {
-        await axios.post(API_URL, form)
-      }
-      setForm({ first_name: "", last_name: "", phone: "", email: "", party_size: 1, date: "", time: "" })
-      setEditId(null)
-      setOpenForm(false)
-      await fetchReservations()
-    } catch (err) {
-      console.error("Error saving reservation:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  try {
+    setLoading(true)
 
-  const handleDelete = async (id: number) => {
+    if (editId) {
+      await axios.put(`${API_URL}/${editId}`, form)
+      await MySwal.fire({
+        icon: "success",
+        title: "Updated!",
+        text: "Reservation has been updated successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      })
+    } else {
+      await axios.post(API_URL, form)
+      await MySwal.fire({
+        icon: "success",
+        title: "Created!",
+        text: "Reservation has been created successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      })
+    }
+
+    // Reset form & close modal
+    setForm({ first_name: "", last_name: "", phone: "", email: "", party_size: 1, date: "", time: "" })
+    setEditId(null)
+    setOpenForm(false)
+
+    await fetchReservations()
+  } catch (err) {
+    console.error("Error saving reservation:", err)
+    await MySwal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: "Failed to save reservation",
+    })
+  } finally {
+    setLoading(false)
+  }
+}
+
+const handleDelete = async (id: number) => {
+  const result = await MySwal.fire({
+    title: "Are you sure?",
+    text: "This reservation will be permanently deleted!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#d33",
+  })
+
+  if (result.isConfirmed) {
     try {
       setLoading(true)
       await axios.delete(`${API_URL}/${id}`)
+
+      // Show success alert
+      await MySwal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "Reservation has been deleted successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      })
+
       await fetchReservations()
     } catch (err) {
       console.error("Error deleting reservation:", err)
+      await MySwal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to delete reservation",
+      })
     } finally {
       setLoading(false)
     }
   }
+}
+
 
   // -------------------- Time Slot Actions --------------------
   const handleSlotSubmit = async () => {
-    try {
-      setLoading(true)
-      if (editSlotId) {
-        await axios.put(`${SLOT_API}/${editSlotId}`, slotForm)
-      } else {
-        await axios.post(SLOT_API, slotForm)
-      }
-      setSlotForm({ start_time: "", end_time: "" })
-      setEditSlotId(null)
-      setOpenSlotForm(false)
-      await fetchSlots()
-    } catch (err) {
-      console.error("Error saving slot:", err)
-    } finally {
-      setLoading(false)
+  try {
+    setLoading(true)
+
+    if (editSlotId) {
+      await axios.put(`${SLOT_API}/${editSlotId}`, slotForm)
+      await MySwal.fire({
+        icon: "success",
+        title: "Updated!",
+        text: "Slot has been updated successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      })
+    } else {
+      await axios.post(SLOT_API, slotForm)
+      await MySwal.fire({
+        icon: "success",
+        title: "Created!",
+        text: "Slot has been created successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      })
     }
+
+    // Reset form & close modal
+    setSlotForm({ start_time: "", end_time: "" })
+    setEditSlotId(null)
+    setOpenSlotForm(false)
+
+    await fetchSlots()
+  } catch (err) {
+    console.error("Error saving slot:", err)
+    await MySwal.fire({
+      icon: "error",
+      title: "Oops...",
+      text: "Failed to save slot",
+    })
+  } finally {
+    setLoading(false)
   }
+}
+
 
   const handleSlotDelete = async (id: number) => {
+  const result = await MySwal.fire({
+    title: "Are you sure?",
+    text: "This slot will be permanently deleted!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#d33",
+  })
+
+  if (result.isConfirmed) {
     try {
       setLoading(true)
       await axios.delete(`${SLOT_API}/${id}`)
+
+      // Show success alert
+      await MySwal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "Slot has been deleted successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      })
+
       await fetchSlots()
     } catch (err) {
       console.error("Error deleting slot:", err)
+      await MySwal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to delete slot",
+      })
     } finally {
       setLoading(false)
     }
   }
+}
+
 
   // -------------------- Search & Pagination --------------------
   useEffect(() => {

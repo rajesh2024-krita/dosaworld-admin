@@ -3,6 +3,10 @@ import { OfferSection } from '../Types/OfferSection';
 import { offerSectionService } from '../Services/offerSectionService';
 import Swal from "sweetalert2"
 import withReactContent from "sweetalert2-react-content"
+import { Button } from './ui/button';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 
 const MySwal = withReactContent(Swal)
 
@@ -163,13 +167,13 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({ section, onSave, on
     };
 
     return (
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-lg max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6">{section ? 'Edit Offer Section' : 'Create Offer Section'}</h2>
+        <form onSubmit={handleSubmit} className="bg-white p-6 border max-w-4xl mx-auto">
+            <div className="text-md font-bold mb-6">{section ? 'Edit Offer Section' : 'Create Offer Section'}</div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                    <label className="block mb-2 text-gray-700">Title *</label>
-                    <input
+                    <Label className="block mb-2 text-gray-700">Title *</Label>
+                    <Input
                         type="text"
                         name="title"
                         value={formData.title}
@@ -179,8 +183,8 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({ section, onSave, on
                     />
                 </div>
                 <div>
-                    <label className="block mb-2 text-gray-700">Subtitle *</label>
-                    <input
+                    <Label className="block mb-2 text-gray-700">Subtitle *</Label>
+                    <Input
                         type="text"
                         name="subtitle"
                         value={formData.subtitle}
@@ -192,8 +196,8 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({ section, onSave, on
             </div>
 
             <div className="mb-6">
-                <label className="block mb-2 text-gray-700">Description *</label>
-                <textarea
+                <Label className="block mb-2 text-gray-700">Description *</Label>
+                <Textarea
                     name="description"
                     value={formData.description}
                     onChange={handleChange}
@@ -216,15 +220,15 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({ section, onSave, on
                             )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <input placeholder="Name" value={bucket.name} onChange={(e) => handleBucketChange(index, 'name', e.target.value)} className="p-3 border rounded-lg" required />
-                            <input placeholder="People" value={bucket.people} onChange={(e) => handleBucketChange(index, 'people', e.target.value)} className="p-3 border rounded-lg" required />
-                            <input placeholder="Price" value={bucket.price} onChange={(e) => handleBucketChange(index, 'price', e.target.value)} className="p-3 border rounded-lg" required />
+                            <Input placeholder="Name" value={bucket.name} onChange={(e) => handleBucketChange(index, 'name', e.target.value)} className="p-3 border rounded-lg" required />
+                            <Input placeholder="People" value={bucket.people} onChange={(e) => handleBucketChange(index, 'people', e.target.value)} className="p-3 border rounded-lg" required />
+                            <Input placeholder="Price" value={bucket.price} onChange={(e) => handleBucketChange(index, 'price', e.target.value)} className="p-3 border rounded-lg" required />
                         </div>
                     </div>
                 ))}
-                <button type="button" onClick={addBucket} className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                <Button type="button" onClick={addBucket} className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                     + Add Bucket
-                </button>
+                </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -234,20 +238,20 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({ section, onSave, on
                     {backgroundPreview && <img src={backgroundPreview} alt="preview" className="mt-2 w-32 rounded" />}
                 </div> */}
                 <div>
-                    <label className="block mb-2 text-gray-700">Item Image</label>
-                    <input type="file" onChange={(e) => handleFileChange(e, 'biryaniImage')} />
+                    <Label className="block mb-2 text-gray-700">Item Image</Label>
+                    <Input type="file" onChange={(e) => handleFileChange(e, 'biryaniImage')} />
                     {biryaniPreview && <img src={biryaniPreview} alt="preview" className="mt-2 w-32 rounded" />}
                 </div>
             </div>
 
             <div className="flex items-center mb-6">
                 <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData((prev: any) => ({ ...prev, isActive: e.target.checked }))} className="mr-2" />
-                <label>Active Offer Section</label>
+                <Label>Active Offer Section</Label>
             </div>
 
             <div className="flex gap-3 justify-end">
-                <button type="button" onClick={onCancel} className="px-6 py-3 border rounded-lg">Cancel</button>
-                <button type="submit" disabled={loading} className="px-6 py-3 bg-blue-600 text-white rounded-lg">{loading ? 'Saving...' : (section ? 'Update Offer Section' : 'Create Offer Section')}</button>
+                <Button type="button" onClick={onCancel} className="px-6 py-3 bg-slate-300 border rounded-lg">Cancel</Button>
+                <Button type="submit" disabled={loading} className="px-6 py-3 text-white rounded-lg">{loading ? 'Saving...' : (section ? 'Update Offer Section' : 'Create Offer Section')}</Button>
             </div>
         </form>
     );
