@@ -33,7 +33,8 @@ export default function ActivityLogs() {
 
   const loadLogs = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/logs'); // adjust route if needed
+      // const res = await fetch('http://localhost:3000/api/logs'); // adjust route if needed
+      const res = await fetch('https://dosaworld-backend.vercel.app/api/logs'); // adjust route if needed
       if (!res.ok) throw new Error('Failed to fetch logs');
       const data = await res.json();
       setLogs(data);
@@ -84,7 +85,7 @@ export default function ActivityLogs() {
 
   const handleExportLogs = async (format: 'csv' | 'json') => {
     try {
-      const res = await fetch(`https://dosaworld-backend-xypt.onrender.com/api/logs/export?format=${format}`);
+      const res = await fetch(`https://dosaworld-backend.vercel.app/api/logs/export?format=${format}`);
       if (!res.ok) throw new Error('Export failed');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);

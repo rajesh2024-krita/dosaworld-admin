@@ -9,9 +9,9 @@ import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 dayjs.extend(isoWeek);
 
-const API_BILLING_URL = "https://dosaworld-backend-xypt.onrender.com/api/billings";
-const API_INVENTORY_URL = "https://dosaworld-backend-xypt.onrender.com/api/usage";
-const API_RESERVATION_URL = "https://dosaworld-backend-xypt.onrender.com/api/reservations";
+const API_BILLING_URL = "https://dosaworld-backend.vercel.app/api/billings";
+const API_INVENTORY_URL = "https://dosaworld-backend.vercel.app/api/usage";
+const API_RESERVATION_URL = "https://dosaworld-backend.vercel.app/api/reservations";
 const CHART_COLOR = "#15803d"; // Unified green color for all graphs
 
 export default function Dashboard() {
