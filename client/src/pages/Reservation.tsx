@@ -62,12 +62,12 @@ export default function ReservationPage() {
 
   const [loading, setLoading] = useState(false) // loader state
 
-  // const API_URL = "https://dosaworld-backend.vercel.app/api/reservations"
-  // const SLOT_API = "https://dosaworld-backend.vercel.app/api/timeslots"
+  const API_URL = "https://dosaworld-backend.vercel.app/api/reservations"
+  const SLOT_API = "https://dosaworld-backend.vercel.app/api/timeslots"
 
   
-  const API_URL = "http://localhost:3000/api/reservations"
-  const SLOT_API = "http://localhost:3000/api/timeslots"
+  // const API_URL = "http://localhost:3000/api/reservations"
+  // const SLOT_API = "http://localhost:3000/api/timeslots"
 
   // -------------------- Fetch Reservations --------------------
   const fetchReservations = async () => {
