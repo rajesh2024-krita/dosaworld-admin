@@ -62,12 +62,12 @@ export default function ReservationPage() {
 
   const [loading, setLoading] = useState(false) // loader state
 
-  const API_URL = "https://dosaworld-backend.vercel.app/api/reservations"
-  const SLOT_API = "https://dosaworld-backend.vercel.app/api/timeslots"
+  // const API_URL = "https://dosaworld-backend.vercel.app/api/reservations"
+  // const SLOT_API = "https://dosaworld-backend.vercel.app/api/timeslots"
 
   
-  // const API_URL = "http://localhost:3000/api/reservations"
-  // const SLOT_API = "http://localhost:3000/api/timeslots"
+  const API_URL = "http://localhost:3000/api/reservations"
+  const SLOT_API = "http://localhost:3000/api/timeslots"
 
   // -------------------- Fetch Reservations --------------------
   const fetchReservations = async () => {
@@ -437,7 +437,14 @@ const handleDelete = async (id: number) => {
               {[1,2,3,4,5,6].map(size => <option key={size} value={size}>{size} Guests</option>)}
               <option value={7}>7+ Guests</option>
             </select>
-            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="text-sm" />
+            {/* <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="text-sm" /> */}
+            <Input
+  type="date"
+  value={form.date ? form.date.split('T')[0] : ''}
+  onChange={(e) => setForm({ ...form, date: e.target.value })}
+  className="text-sm"
+/>
+
             <Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="text-sm" />
             <Button className="w-full text-sm py-1 h-8" onClick={handleSubmit}>{editId ? "Update" : "Create"}</Button>
           </div>
