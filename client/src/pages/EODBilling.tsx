@@ -48,7 +48,7 @@ const MySwal = withReactContent(Swal)
 dayjs.extend(isoWeek);
 dayjs.extend(customParseFormat);
 
-const API_URL = "https://dosaworld-backend.vercel.app/api/billings"; 
+const API_URL = "https://dosaworld-backend.vercel.app/api/billings";
 const COLORS = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 export default function EODBilling() {
@@ -91,48 +91,69 @@ export default function EODBilling() {
 
   // Submit new entry
   const handleSubmit = async (e: any) => {
-  e.preventDefault();
-  try {
-    setLoading(true);
-    await axios.post(API_URL, form);
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await axios.post(API_URL, form);
 
-    // Show success alert
-    await MySwal.fire({
-      icon: "success",
-      title: "Saved!",
-      text: "Entry has been saved successfully.",
-      timer: 1500,
-      showConfirmButton: false,
-    });
+      // Show success alert
+      await MySwal.fire({
+        icon: "success",
+        title: "Saved!",
+        text: "Entry has been saved successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
 
-    await fetchData();
-    setOpen(false);
-    setForm({
-      date: new Date().toISOString().split("T")[0],
-      card: "",
-      cash: "",
-      handledBy: "",
-      trinkgeld: "",
-      trinkgeldBar: "",
-      paid: "",
-    });
-  } catch (err) {
-    console.error(err);
-    await MySwal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: "Failed to save entry",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+      await fetchData();
+      setOpen(false);
+      setForm({
+        date: new Date().toISOString().split("T")[0],
+        card: "",
+        cash: "",
+        handledBy: "",
+        trinkgeld: "",
+        trinkgeldBar: "",
+        paid: "",
+      });
+    } catch (err) {
+      console.error(err);
+      await MySwal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to save entry",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Export CSV
-  const downloadReport = () => {
+  // const downloadReport = () => {
+  //   let csv = "Date,Card,Cash,Handled By,Trinkgeld,Trinkgeld Bar,Paid\n";
+  //   let totals = { card: 0, cash: 0, trinkgeld: 0, trinkgeldBar: 0, paid: 0 };
+  //   data.forEach((row: any) => {
+  //     csv += `${row.date},${row.card},${row.cash},${row.handledBy},${row.trinkgeld},${row.trinkgeldBar},${row.paid}\n`;
+  //     totals.card += Number(row.card || 0);
+  //     totals.cash += Number(row.cash || 0);
+  //     totals.trinkgeld += Number(row.trinkgeld || 0);
+  //     totals.trinkgeldBar += Number(row.trinkgeldBar || 0);
+  //     totals.paid += Number(row.paid || 0);
+  //   });
+  //   csv += `Totals,${totals.card},${totals.cash},,${totals.trinkgeld},${totals.trinkgeldBar},${totals.paid}`;
+  //   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  //   const url = URL.createObjectURL(blob);
+  //   const a = document.createElement("a");
+  //   a.href = url;
+  //   a.download = `eod_report_${dayjs().format("YYYY-MM-DD")}.csv`;
+  //   a.click();
+  // };
+
+  const downloadReport = (rows: any[]) => {
     let csv = "Date,Card,Cash,Handled By,Trinkgeld,Trinkgeld Bar,Paid\n";
     let totals = { card: 0, cash: 0, trinkgeld: 0, trinkgeldBar: 0, paid: 0 };
-    data.forEach((row: any) => {
+
+    rows.forEach((row: any) => {
       csv += `${row.date},${row.card},${row.cash},${row.handledBy},${row.trinkgeld},${row.trinkgeldBar},${row.paid}\n`;
       totals.card += Number(row.card || 0);
       totals.cash += Number(row.cash || 0);
@@ -140,6 +161,7 @@ export default function EODBilling() {
       totals.trinkgeldBar += Number(row.trinkgeldBar || 0);
       totals.paid += Number(row.paid || 0);
     });
+
     csv += `Totals,${totals.card},${totals.cash},,${totals.trinkgeld},${totals.trinkgeldBar},${totals.paid}`;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -148,6 +170,7 @@ export default function EODBilling() {
     a.download = `eod_report_${dayjs().format("YYYY-MM-DD")}.csv`;
     a.click();
   };
+
 
   // Apply filters
   const filteredData = data.filter((row: any) => {
@@ -226,7 +249,7 @@ export default function EODBilling() {
                 const total = Number(row.card || 0) + Number(row.cash || 0);
                 return (
                   <tr key={idx} className="border-t even:bg-muted/20 hover:bg-muted/10">
-                    <td className="p-3 font-medium">{idx + 1 + (page-1)*pageSize}</td>
+                    <td className="p-3 font-medium">{idx + 1 + (page - 1) * pageSize}</td>
                     <td className="p-3 font-medium">{formatDate(row.date)}</td>
                     <td className="p-3">€{Number(row.card || 0).toFixed(2)}</td>
                     <td className="p-3">€{Number(row.cash || 0).toFixed(2)}</td>
@@ -246,8 +269,8 @@ export default function EODBilling() {
           <div className="flex justify-between items-center p-4 text-sm">
             <div>Page {page} of {totalPages}</div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(page-1)}>Previous</Button>
-              <Button size="sm" variant="outline" disabled={page === totalPages} onClick={() => setPage(page+1)}>Next</Button>
+              <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</Button>
+              <Button size="sm" variant="outline" disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</Button>
             </div>
           </div>
         )}
@@ -326,7 +349,7 @@ export default function EODBilling() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent }) => `${name}: ${(percent*100).toFixed(0)}%`}>
+                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
                     {pieData.map((_, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
                   </Pie>
                   <Tooltip formatter={(value) => [`€${value}`, ""]} />
@@ -351,15 +374,25 @@ export default function EODBilling() {
           <div className="flex items-center justify-between gap-2">
             <div className="relative">
               <Calendar className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="date" value={filter.from} onChange={(e) => setFilter({...filter, from: e.target.value})} className="pl-8 w-[130px]" />
+              <Input type="date" value={filter.from} onChange={(e) => setFilter({ ...filter, from: e.target.value })} className="pl-8 w-[130px]" />
             </div>
             <span className="text-muted-foreground">-</span>
             <div className="relative">
               <Calendar className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="date" value={filter.to} onChange={(e) => setFilter({...filter, to: e.target.value})} className="pl-8 w-[130px]" />
+              <Input type="date" value={filter.to} onChange={(e) => setFilter({ ...filter, to: e.target.value })} className="pl-8 w-[130px]" />
             </div>
             {(filter.from || filter.to) && <Button variant="ghost" size="icon" onClick={() => setFilter({ from: "", to: "" })}><X className="h-4 w-4" /></Button>}
-            <Button variant="outline" onClick={downloadReport} className="gap-2"><Download className="h-4 w-4" /> Export</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const currentTab = tabsConfig.find(t => t.key === activeTab);
+                downloadReport(currentTab?.rows || []);
+              }}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" /> Export
+            </Button>
+
           </div>
           <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" /> New Entry</Button></DialogTrigger>
         </div>
@@ -369,14 +402,14 @@ export default function EODBilling() {
           <form onSubmit={handleSubmit} className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div><label className="text-sm font-medium">Date</label><Input
-              name="date"
-              type="date"
-              value={form.date}
-              onChange={handleChange}
-              readOnly={false} // make sure user can select
-              max={new Date().toISOString().split("T")[0]} // today's date in YYYY-MM-DD format
-            />
-            </div>
+                name="date"
+                type="date"
+                value={form.date}
+                onChange={handleChange}
+                readOnly={false} // make sure user can select
+                max={new Date().toISOString().split("T")[0]} // today's date in YYYY-MM-DD format
+              />
+              </div>
               <div><label className="text-sm font-medium">Handled By</label><Input name="handledBy" placeholder="Name" value={form.handledBy} onChange={handleChange} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
