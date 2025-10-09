@@ -14,6 +14,7 @@ import { Eye, Edit, Trash2, Plus, ChevronLeft, ChevronRight } from "lucide-react
 import Loader from "@/components/Loader"
 import Swal from "sweetalert2"
 import withReactContent from "sweetalert2-react-content"
+import { api } from "@/lib/axios"
 
 const MySwal = withReactContent(Swal)
 
@@ -65,7 +66,7 @@ export default function ReservationPage() {
   // const API_URL = "https://dosaworld-backend.vercel.app/api/reservations"
   // const SLOT_API = "https://dosaworld-backend.vercel.app/api/timeslots"
 
-  
+
   const API_URL = "http://localhost:3000/api/reservations"
   const SLOT_API = "http://localhost:3000/api/timeslots"
 
@@ -73,7 +74,7 @@ export default function ReservationPage() {
   const fetchReservations = async () => {
     try {
       setLoading(true)
-      const res = await axios.get(API_URL)
+      const res = await api.get(`/reservations`)
       setReservations(res.data)
       setFilteredReservations(res.data)
     } catch (err) {
@@ -87,7 +88,7 @@ export default function ReservationPage() {
   const fetchSlots = async () => {
     try {
       setLoading(true)
-      const res = await axios.get(SLOT_API)
+      const res = await api.get(`/timeslots`)
       setTimeSlots(res.data)
     } catch (err) {
       console.error("Error fetching slots:", err)
@@ -101,180 +102,196 @@ export default function ReservationPage() {
 
   // -------------------- Reservation Actions --------------------
   const handleSubmit = async () => {
-  try {
-    setLoading(true)
-
-    if (editId) {
-      await axios.put(`${API_URL}/${editId}`, form)
-      await MySwal.fire({
-        icon: "success",
-        title: "Updated!",
-        text: "Reservation has been updated successfully.",
-        timer: 1500,
-        showConfirmButton: false,
-      })
-    } else {
-      await axios.post(API_URL, form)
-      await MySwal.fire({
-        icon: "success",
-        title: "Created!",
-        text: "Reservation has been created successfully.",
-        timer: 1500,
-        showConfirmButton: false,
-      })
-    }
-
-    // Reset form & close modal
-    setForm({ first_name: "", last_name: "", phone: "", email: "", party_size: 1, date: "", time: "" })
-    setEditId(null)
-    setOpenForm(false)
-
-    await fetchReservations()
-  } catch (err) {
-    console.error("Error saving reservation:", err)
-    await MySwal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: "Failed to save reservation",
-    })
-  } finally {
-    setLoading(false)
-  }
-}
-
-const handleDelete = async (id: number) => {
-  const result = await MySwal.fire({
-    title: "Are you sure?",
-    text: "This reservation will be permanently deleted!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Yes, delete it!",
-    cancelButtonText: "Cancel",
-    confirmButtonColor: "#d33",
-  })
-
-  if (result.isConfirmed) {
     try {
-      setLoading(true)
-      await axios.delete(`${API_URL}/${id}`)
+      setLoading(true);
 
-      // Show success alert
-      await MySwal.fire({
-        icon: "success",
-        title: "Deleted!",
-        text: "Reservation has been deleted successfully.",
-        timer: 1500,
-        showConfirmButton: false,
-      })
+      if (editId) {
+        await api.put(`/reservations/${editId}`, form);
+        await MySwal.fire({
+          icon: "success",
+          title: "Updated!",
+          text: "Reservation has been updated successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } else {
+        await api.post(`/reservations`, form);
+        await MySwal.fire({
+          icon: "success",
+          title: "Created!",
+          text: "Reservation has been created successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
 
-      await fetchReservations()
+      // Reset form & close modal
+      setForm({
+        first_name: "",
+        last_name: "",
+        phone: "",
+        email: "",
+        party_size: 1,
+        date: "",
+        time: "",
+      });
+      setEditId(null);
+      setOpenForm(false);
+
+      await fetchReservations();
     } catch (err) {
-      console.error("Error deleting reservation:", err)
+      console.error("Error saving reservation:", err);
+
+      // ✅ Show custom message if DUPLICATE_SLOT
+      const message =
+        err.response?.data?.code === "DUPLICATE_SLOT"
+          ? err.response.data.message
+          : "Failed to save reservation";
+
       await MySwal.fire({
-        icon: "error",
+        icon: "warning", // can use "error" as well
         title: "Oops...",
-        text: "Failed to delete reservation",
-      })
+        text: message,
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
+    }
+  };
+
+
+  const handleDelete = async (id: number) => {
+    const result = await MySwal.fire({
+      title: "Are you sure?",
+      text: "This reservation will be permanently deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#d33",
+    })
+
+    if (result.isConfirmed) {
+      try {
+        setLoading(true)
+        await api.delete(`/reservations/${id}`)
+
+        // Show success alert
+        await MySwal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "Reservation has been deleted successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        })
+
+        await fetchReservations()
+      } catch (err) {
+        console.error("Error deleting reservation:", err)
+        await MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Failed to delete reservation",
+        })
+      } finally {
+        setLoading(false)
+      }
     }
   }
-}
 
 
   // -------------------- Time Slot Actions --------------------
   const handleSlotSubmit = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    if (editSlotId) {
-      await axios.put(`${SLOT_API}/${editSlotId}`, slotForm);
-      await MySwal.fire({
-        icon: "success",
-        title: "Updated!",
-        text: "Slot has been updated successfully.",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } else {
-      await axios.post(SLOT_API, slotForm);
-      await MySwal.fire({
-        icon: "success",
-        title: "Created!",
-        text: "Slot has been created successfully.",
-        timer: 1500,
-        showConfirmButton: false,
-      });
+      if (editSlotId) {
+        await api.put(`/timeslots/${editSlotId}`, slotForm);
+        await MySwal.fire({
+          icon: "success",
+          title: "Updated!",
+          text: "Slot has been updated successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } else {
+        await api.post(`/timeslots`, slotForm);
+        await MySwal.fire({
+          icon: "success",
+          title: "Created!",
+          text: "Slot has been created successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+
+      // Reset form & close modal
+      setSlotForm({ start_time: "", end_time: "" });
+      setEditSlotId(null);
+      setOpenSlotForm(false);
+
+      await fetchSlots();
+    } catch (err: any) {
+      console.error("Error saving slot:", err);
+
+      // Check if server sent the "Time slot already exists" warning
+      if (err.response && err.response.status === 400 && err.response.data?.message) {
+        await MySwal.fire({
+          icon: "warning",
+          title: "Warning",
+          text: err.response.data.message,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } else {
+        await MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Failed to save slot",
+        });
+      }
+    } finally {
+      setLoading(false);
     }
-
-    // Reset form & close modal
-    setSlotForm({ start_time: "", end_time: "" });
-    setEditSlotId(null);
-    setOpenSlotForm(false);
-
-    await fetchSlots();
-  } catch (err: any) {
-    console.error("Error saving slot:", err);
-
-    // Check if server sent the "Time slot already exists" warning
-    if (err.response && err.response.status === 400 && err.response.data?.message) {
-      await MySwal.fire({
-        icon: "warning",
-        title: "Warning",
-        text: err.response.data.message,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } else {
-      await MySwal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Failed to save slot",
-      });
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleSlotDelete = async (id: number) => {
-  const result = await MySwal.fire({
-    title: "Are you sure?",
-    text: "This slot will be permanently deleted!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Yes, delete it!",
-    cancelButtonText: "Cancel",
-    confirmButtonColor: "#d33",
-  })
+    const result = await MySwal.fire({
+      title: "Are you sure?",
+      text: "This slot will be permanently deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#d33",
+    })
 
-  if (result.isConfirmed) {
-    try {
-      setLoading(true)
-      await axios.delete(`${SLOT_API}/${id}`)
+    if (result.isConfirmed) {
+      try {
+        setLoading(true)
+        await api.delete(`/timeslots/${id}`)
 
-      // Show success alert
-      await MySwal.fire({
-        icon: "success",
-        title: "Deleted!",
-        text: "Slot has been deleted successfully.",
-        timer: 1500,
-        showConfirmButton: false,
-      })
+        // Show success alert
+        await MySwal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "Slot has been deleted successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        })
 
-      await fetchSlots()
-    } catch (err) {
-      console.error("Error deleting slot:", err)
-      await MySwal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Failed to delete slot",
-      })
-    } finally {
-      setLoading(false)
+        await fetchSlots()
+      } catch (err) {
+        console.error("Error deleting slot:", err)
+        await MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Failed to delete slot",
+        })
+      } finally {
+        setLoading(false)
+      }
     }
   }
-}
 
 
   // -------------------- Search & Pagination --------------------
@@ -439,26 +456,117 @@ const handleDelete = async (id: number) => {
           <DialogHeader>
             <DialogTitle className="text-sm sm:text-base">{editId ? "Edit Reservation" : "New Reservation"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="First Name" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} className="text-sm" />
-            <Input placeholder="Last Name" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} className="text-sm" />
-            <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="text-sm" />
-            <Input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="text-sm" />
-            <select className="border p-2 rounded w-full text-sm" value={form.party_size} onChange={(e) => setForm({ ...form, party_size: Number(e.target.value) })}>
-              {[1,2,3,4,5,6].map(size => <option key={size} value={size}>{size} Guests</option>)}
-              <option value={7}>7+ Guests</option>
-            </select>
-            {/* <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="text-sm" /> */}
-            <Input
-  type="date"
-  value={form.date ? form.date.split('T')[0] : ''}
-  onChange={(e) => setForm({ ...form, date: e.target.value })}
-  className="text-sm"
-/>
+          <div className="space-y-3 h-96 overflow-auto p-2">
+            <div className="flex gap-2">
+              <div>
+                <label className="block text-sm font-medium mb-1">First Name</label>
+                <Input
+                  placeholder="First Name"
+                  value={form.first_name}
+                  onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                  className="text-sm"
+                />
+              </div>
 
-            <Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="text-sm" />
-            <Button className="w-full text-sm py-1 h-8" onClick={handleSubmit}>{editId ? "Update" : "Create"}</Button>
+              <div>
+                <label className="block text-sm font-medium mb-1">Last Name</label>
+                <Input
+                  placeholder="Last Name"
+                  value={form.last_name}
+                  onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                  className="text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <div>
+                <label className="block text-sm font-medium mb-1">Phone</label>
+                <Input
+                  placeholder="Phone"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <Input
+                  placeholder="Email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Party Size</label>
+              <select
+                className="border p-2 rounded w-full text-sm"
+                value={form.party_size}
+                onChange={(e) => setForm({ ...form, party_size: Number(e.target.value) })}
+              >
+                {[1, 2, 3, 4, 5, 6].map((size) => (
+                  <option key={size} value={size}>{size} Guests</option>
+                ))}
+                <option value={7}>7+ Guests</option>
+              </select>
+            </div>
+
+            <div className="flex justify-between">
+              <div>
+                <label className="block text-sm font-medium mb-1">Date</label>
+                <Input
+                  type="date"
+                  value={form.date ? form.date.split('T')[0] : ''}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  className="text-sm w-full"
+                  min={new Date().toISOString().split("T")[0]}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Time Slot</label>
+                <select
+                  className="border py-2.5 w-full text-sm"
+                  value={form.time}
+                  onChange={(e) => setForm({ ...form, time: e.target.value })}
+                >
+                  <option value="">Select Time Slot</option>
+                  {timeSlots
+                    .sort((a, b) => a.start_time.localeCompare(b.start_time))
+                    .filter((slot) => {
+                      if (!form.date) return true;
+
+                      const today = new Date();
+                      const selectedDate = new Date(form.date);
+                      const [hours, minutes] = slot.start_time.split(":").map(Number);
+
+                      if (
+                        selectedDate.toDateString() === today.toDateString() &&
+                        (hours < today.getHours() || (hours === today.getHours() && minutes <= today.getMinutes()))
+                      ) {
+                        return false;
+                      }
+                      return true;
+                    })
+                    .map((slot) => (
+                      <option key={slot.id} value={slot.start_time}>
+                        {slot.start_time}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            <Button className="w-full text-sm py-1 h-8" onClick={handleSubmit}>
+              {editId ? "Update" : "Create"}
+            </Button>
           </div>
+
         </DialogContent>
       </Dialog>
 
