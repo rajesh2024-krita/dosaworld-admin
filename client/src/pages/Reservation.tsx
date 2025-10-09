@@ -62,12 +62,12 @@ export default function ReservationPage() {
 
   const [loading, setLoading] = useState(false) // loader state
 
-  const API_URL = "https://dosaworld-backend.vercel.app/api/reservations"
-  const SLOT_API = "https://dosaworld-backend.vercel.app/api/timeslots"
+  // const API_URL = "https://dosaworld-backend.vercel.app/api/reservations"
+  // const SLOT_API = "https://dosaworld-backend.vercel.app/api/timeslots"
 
   
-  // const API_URL = "http://localhost:3000/api/reservations"
-  // const SLOT_API = "http://localhost:3000/api/timeslots"
+  const API_URL = "http://localhost:3000/api/reservations"
+  const SLOT_API = "http://localhost:3000/api/timeslots"
 
   // -------------------- Fetch Reservations --------------------
   const fetchReservations = async () => {
@@ -185,46 +185,57 @@ const handleDelete = async (id: number) => {
   // -------------------- Time Slot Actions --------------------
   const handleSlotSubmit = async () => {
   try {
-    setLoading(true)
+    setLoading(true);
 
     if (editSlotId) {
-      await axios.put(`${SLOT_API}/${editSlotId}`, slotForm)
+      await axios.put(`${SLOT_API}/${editSlotId}`, slotForm);
       await MySwal.fire({
         icon: "success",
         title: "Updated!",
         text: "Slot has been updated successfully.",
         timer: 1500,
         showConfirmButton: false,
-      })
+      });
     } else {
-      await axios.post(SLOT_API, slotForm)
+      await axios.post(SLOT_API, slotForm);
       await MySwal.fire({
         icon: "success",
         title: "Created!",
         text: "Slot has been created successfully.",
         timer: 1500,
         showConfirmButton: false,
-      })
+      });
     }
 
     // Reset form & close modal
-    setSlotForm({ start_time: "", end_time: "" })
-    setEditSlotId(null)
-    setOpenSlotForm(false)
+    setSlotForm({ start_time: "", end_time: "" });
+    setEditSlotId(null);
+    setOpenSlotForm(false);
 
-    await fetchSlots()
-  } catch (err) {
-    console.error("Error saving slot:", err)
-    await MySwal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: "Failed to save slot",
-    })
+    await fetchSlots();
+  } catch (err: any) {
+    console.error("Error saving slot:", err);
+
+    // Check if server sent the "Time slot already exists" warning
+    if (err.response && err.response.status === 400 && err.response.data?.message) {
+      await MySwal.fire({
+        icon: "warning",
+        title: "Warning",
+        text: err.response.data.message,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } else {
+      await MySwal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to save slot",
+      });
+    }
   } finally {
-    setLoading(false)
+    setLoading(false);
   }
-}
-
+};
 
   const handleSlotDelete = async (id: number) => {
   const result = await MySwal.fire({
