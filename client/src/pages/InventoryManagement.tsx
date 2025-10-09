@@ -85,8 +85,25 @@ interface ToastContainerProps {
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onClose, onEdit }) => {
   if (toasts.length === 0) return null;
 
+  // Clear all notifications at once
+  const handleClearAll = () => {
+    toasts.forEach((toast) => onClose(toast.id));
+  };
+
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+      {/* Header with Clear All button */}
+      <div className="flex justify-between items-center mb-2 bg-white/80 backdrop-blur-sm p-2 rounded-md border border-gray-200 shadow-sm">
+        <span className="font-semibold text-sm text-gray-800">Notifications</span>
+        <button
+          onClick={handleClearAll}
+          className="text-xs font-medium text-red-600 hover:text-red-700 transition-colors"
+        >
+          Clear All
+        </button>
+      </div>
+
+      {/* Toasts List */}
       {toasts.map((toast) => (
         <div
           key={toast.id}
@@ -99,9 +116,10 @@ const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onClose, onEdit
                 <span className="font-semibold text-sm text-red-800">Low Stock Alert</span>
               </div>
               <p className="text-sm text-gray-600 mb-2">
-                <span className="font-medium">{toast.item.product}</span> is running low. 
-                Current stock: <span className="font-semibold text-red-600">{toast.item.qty}</span> 
-                (Alert at: {toast.item.alertQty})
+                <span className="font-medium">{toast.item.product}</span> is running low.{" "}
+                Current stock:{" "}
+                <span className="font-semibold text-red-600">{toast.item.qty}</span> (Alert at:{" "}
+                {toast.item.alertQty})
               </p>
               <div className="flex gap-2">
                 <Button
@@ -133,6 +151,7 @@ const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onClose, onEdit
     </div>
   );
 };
+
 
 // Pagination Component
 interface PaginationProps {

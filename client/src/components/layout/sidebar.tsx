@@ -7,6 +7,10 @@ import {
   CalendarCheck,
   UserCircle,
   LogOut,
+  Users2,
+  ClipboardList,
+  Package,
+  Megaphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
@@ -28,6 +32,12 @@ const menuItems = [
         permission: "dashboard:read" as const,
       },
       {
+        name: "Party Management",
+        path: "/party-management",
+        icon: Users2,
+        permission: "dashboard:read" as const,
+      },
+      {
         name: "Reservation Management",
         path: "/reservation-management",
         icon: CalendarCheck,
@@ -36,19 +46,19 @@ const menuItems = [
       {
         name: "Billing Management",
         path: "/billing-management",
-        icon: CalendarCheck,
+        icon: ClipboardList,
         permission: "dashboard:read" as const,
       },
       {
         name: "Inventory Management",
         path: "/inventory-management",
-        icon: CalendarCheck,
+        icon: Package,
         permission: "billing:read" as const,
       },
       {
         name: "Offer Management",
         path: "/offer-management",
-        icon: CalendarCheck,
+        icon: Megaphone,
         permission: "billing:read" as const,
       },
     ],

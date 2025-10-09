@@ -28,6 +28,7 @@ import ReservationPage from "./pages/Reservation";
 import EODBilling from "./pages/EODBilling";
 import InventoryManagement from "./pages/InventoryManagement";
 import OfferMaganement from "./pages/OfferManagement";
+import PartyManagement from "./pages/PartyManagement";
 
 function DashboardLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -75,6 +76,13 @@ function AuthenticatedRoutes() {
         <DashboardLayout title="Menu Management">
           <ProtectedRoute requiredPermission="users:read">
             <MenuManagement />
+          </ProtectedRoute>
+        </DashboardLayout>
+      </Route>
+      <Route path="/party-management">
+        <DashboardLayout title="Party Management">
+          <ProtectedRoute requiredPermission="users:read">
+            <PartyManagement />
           </ProtectedRoute>
         </DashboardLayout>
       </Route>

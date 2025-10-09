@@ -1,25 +1,125 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
+import { api } from "@/lib/axios";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 dayjs.extend(isoWeek);
 
-const API_BILLING_URL = "https://dosaworld-backend.vercel.app/api/billings";
-const API_INVENTORY_URL = "https://dosaworld-backend.vercel.app/api/usage";
-const API_RESERVATION_URL = "https://dosaworld-backend.vercel.app/api/reservations";
 const CHART_COLOR = "#15803d"; // Unified green color for all graphs
+
+// Types
+interface InventoryItem {
+  id: number;
+  product: string;
+  packSize: string;
+  price: number | string;
+  qty: number | string;
+  total: number | string;
+  status: string;
+  alertQty: number | string;
+}
+
+interface Toast {
+  id: number;
+  item: InventoryItem;
+  type: 'lowStock';
+}
+
+// Toast Component
+interface ToastContainerProps {
+  toasts: Toast[];
+  onClose: (id: number) => void;
+  onAddStock: (item: InventoryItem) => void;
+}
+
+const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onClose, onAddStock }) => {
+  if (toasts.length === 0) return null;
+
+  // Function to clear all toasts
+  const handleClearAll = () => {
+    toasts.forEach(toast => onClose(toast.id));
+  };
+
+  return (
+    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+      {/* Header with Clear All Button */}
+      <div className="flex justify-between items-center mb-2 bg-white/80 backdrop-blur-sm p-2 rounded-md border border-gray-200 shadow-sm">
+        <span className="font-semibold text-sm text-gray-800">Notifications</span>
+        <button
+          onClick={handleClearAll}
+          className="text-xs font-medium text-red-600 hover:text-red-700 transition-colors"
+        >
+          Clear All
+        </button>
+      </div>
+
+      {/* Toast list */}
+      {toasts.map((toast) => (
+        <div
+          key={toast.id}
+          className="bg-white border border-red-200 rounded-lg shadow-lg p-4 animate-in slide-in-from-right duration-300"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="font-semibold text-sm text-red-800">Low Stock Alert</span>
+              </div>
+              <p className="text-sm text-gray-600 mb-2">
+                <span className="font-medium">{toast.item.product}</span> is running low. 
+                Current stock: <span className="font-semibold text-red-600">{toast.item.qty}</span> 
+                (Alert at: {toast.item.alertQty})
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => onAddStock(toast.item)}
+                  className="bg-[#15803d] hover:bg-[#15803d] text-white h-7 text-xs"
+                >
+                  View Inventory
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onClose(toast.id)}
+                  className="h-7 text-xs"
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+            <button
+              onClick={() => onClose(toast.id)}
+              className="ml-2 flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 
 export default function Dashboard() {
   const [billingData, setBillingData] = useState<any[]>([]);
   const [inventoryData, setInventoryData] = useState<any[]>([]);
   const [reservationData, setReservationData] = useState<any[]>([]);
-  const [period, setPeriod] = useState("today");
-  const [loading, setLoading] = useState(true); // NEW
+  const [period, setPeriod] = useState("week");
+  const [loading, setLoading] = useState(true);
+
+  // Toast states
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toastIdCounter, setToastIdCounter] = useState(0);
+  const [notifiedItems, setNotifiedItems] = useState<Set<number>>(new Set());
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
 
   const periodOptions = [
     { value: "today", label: "Daily" },
@@ -32,20 +132,22 @@ export default function Dashboard() {
     { value: "all", label: "All Time" },
   ];
 
-  // Fetch data
+  // Fetch all data including inventory for low stock alerts
   useEffect(() => {
     const fetchAll = async () => {
       try {
         setLoading(true);
-        const [billingRes, inventoryRes, reservationRes] = await Promise.all([
-          axios.get(API_BILLING_URL),
-          axios.get(API_INVENTORY_URL),
-          axios.get(API_RESERVATION_URL),
+        const [billingRes, inventoryRes, reservationRes, inventoryItemsRes] = await Promise.all([
+          api.get("/billings"),
+          api.get("/usage"),
+          api.get("/reservations"),
+          api.get("/inventory") // Fetch inventory items for low stock alerts
         ]);
 
         setBillingData(billingRes.data?.data || []);
         setInventoryData(inventoryRes.data?.data || []);
         setReservationData(reservationRes.data || []);
+        setInventoryItems(inventoryItemsRes.data?.data || []);
       } catch (err) {
         console.error("Failed to fetch data:", err);
       } finally {
@@ -55,6 +157,48 @@ export default function Dashboard() {
 
     fetchAll();
   }, []);
+
+  // Check for low stock items and show toasts
+  useEffect(() => {
+    const lowStockItems = inventoryItems.filter(
+      item => Number(item.qty) <= Number(item.alertQty) && item.status !== "Out of Stock"
+    );
+
+    const newNotifiedItems = new Set(notifiedItems);
+    const newToasts: Toast[] = [];
+
+    lowStockItems.forEach(item => {
+      if (!notifiedItems.has(item.id)) {
+        newNotifiedItems.add(item.id);
+        newToasts.push({
+          id: toastIdCounter + newToasts.length + 1,
+          item,
+          type: 'lowStock'
+        });
+      }
+    });
+
+    if (newToasts.length > 0) {
+      setToastIdCounter(prev => prev + newToasts.length);
+      setToasts(prev => [...prev, ...newToasts]);
+      setNotifiedItems(newNotifiedItems);
+    }
+
+    // Clean up toasts for items that are no longer low stock
+    setToasts(prev => prev.filter(toast => 
+      lowStockItems.some(item => item.id === toast.item.id)
+    ));
+  }, [inventoryItems]);
+
+  // Toast handlers
+  const handleCloseToast = (id: number) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  const handleAddStock = (item: InventoryItem) => {
+    window.location.href = `/inventory-management?editItem=${item.id}`;
+    setToasts(prev => prev.filter(toast => toast.item.id !== item.id));
+  };
 
   // Group by period
   const groupByPeriod = (arr: any[], period: string, type: "billing" | "inventory" | "reservation") => {
@@ -153,6 +297,13 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Toast Notifications */}
+      <ToastContainer 
+        toasts={toasts} 
+        onClose={handleCloseToast}
+        onAddStock={handleAddStock}
+      />
+
       {/* Period Dropdown */}
       <div className="flex justify-between">
         <h2 className="text-base sm:text-lg font-semibold uppercase">DashBoard</h2>
