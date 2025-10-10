@@ -21,6 +21,7 @@ import {
 import { Edit, Trash2, Plus, Calendar, User, Phone, Mail, MapPin, Users, Bell, Loader2, Eye, Download } from "lucide-react"
 import Swal from "sweetalert2"
 import withReactContent from "sweetalert2-react-content"
+import Logo from '@/assets/logo.png'
 
 const MySwal = withReactContent(Swal)
 
@@ -55,98 +56,306 @@ interface ApiResponse<T> {
   count?: number
 }
 
-// PDF Generation function
+// ===== Fetch Logo Bytes =====
+const fetchLogoBytes = async (url: string) => {
+  const res = await fetch(url);
+  return new Uint8Array(await res.arrayBuffer());
+};
 
-const generateInvoicePDF = async (party: Party) => {
+// ===== Fetch Party Details =====
+const fetchPartyDetails = async (partyId: number) => {
+  try {
+    const { data } = await api.get<ApiResponse<Party>>(`/parties/${partyId}`);
+    if (data.success && data.data) {
+      return data.data;
+    }
+    throw new Error(data.message || "Failed to fetch party details");
+  } catch (error) {
+    console.error("Error fetching party details:", error);
+    throw error;
+  }
+};
+
+// ===== Calculate Invoice Summary =====
+const calculateInvoiceSummary = (products: Product[]) => {
+  const subtotal = products.reduce((sum, product) => {
+    return sum + (product.quantity * product.price);
+  }, 0);
+
+  // You can add tax calculations here based on your requirements
+  const taxRate = 0.07; // 07% VAT - adjust as needed
+  const taxAmount = subtotal * taxRate;
+  const total = subtotal + taxAmount;
+
+  return {
+    subtotal,
+    taxAmount,
+    total
+  };
+};
+
+// ===== Generate Invoice PDF =====
+const generateInvoicePDF = async (party: any, logoBytes: Uint8Array) => {
+  // Fetch complete party details from backend
+  const partyDetails = await fetchPartyDetails(party.id);
+
   const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([595, 842]); // A4 size
+  const page = pdfDoc.addPage([595, 842]); // A4
   const { width, height } = page.getSize();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
+  // ===== Header: Logo & Invoice Info =====
   let y = height - 50;
 
-  // Header
-  page.drawText(`Invoice: ${String(party.id).padStart(4, '0')}`, {
-    x: 50, y, font: fontBold, size: 16
+  // Embed Logo
+  const logoImage = await pdfDoc.embedPng(logoBytes);
+  const logoDims = logoImage.scale(0.15);
+  page.drawImage(logoImage, {
+    x: 50,
+    y: y - logoDims.height + 10,
+    width: logoDims.width,
+    height: logoDims.height,
+  });
+
+  // Invoice info on top-right
+  const formatDate = (date: string | Date) => {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Then in your PDF:
+  const rightX = width - 200;
+  const currentYear = new Date().getFullYear();
+  page.drawText(`Invoice: ${currentYear}-${String(partyDetails.id).padStart(4, '0')}`, {
+    x: rightX,
+    y,
+    font: fontBold,
+    size: 16
   });
   y -= 20;
-  page.drawText(`Issued on: ${party.issuedDate}    Due by: ${party.dueDate}`, {
-    x: 50, y, font, size: 10, color: rgb(0.2, 0.2, 0.2)
-  });
-
-  y -= 40;
-  page.drawText("From:", { x: 50, y, font: fontBold, size: 12 });
+  page.drawText(`Issued: ${formatDate(partyDetails.issuedDate)}`, { x: rightX, y, font, size: 10 });
   y -= 15;
-  page.drawText("Dosa World Indisch Restaurant UG", { x: 50, y, font, size: 10 });
-  y -= 12;
-  page.drawText("Lammertwiete 2 21073 Hamburg, Germany", { x: 50, y, font, size: 10 });
-  y -= 12;
-  page.drawText("info@dosaworld.de | +49 403 2527895 | dosaworld.de", { x: 50, y, font, size: 10 });
+  page.drawText(`Due: ${formatDate(partyDetails.dueDate)}`, { x: rightX, y, font, size: 10 });
 
-  y -= 30;
-  page.drawText("To:", { x: 50, y, font: fontBold, size: 12 });
-  y -= 15;
-  page.drawText(`${party.customerName}`, { x: 50, y, font, size: 10 });
-  y -= 12;
-  page.drawText(`${party.address}`, { x: 50, y, font, size: 10 });
-  y -= 12;
-  page.drawText(`${party.email} | ${party.phone}`, { x: 50, y, font, size: 10 });
+  y = height - 120; // start below header
 
-  y -= 30;
-  // Table headers
-  page.drawText("Product", { x: 50, y, font: fontBold, size: 10 });
-  page.drawText("Qty", { x: 300, y, font: fontBold, size: 10 });
-  page.drawText("Unit Price", { x: 350, y, font: fontBold, size: 10 });
-  page.drawText("Total", { x: 450, y, font: fontBold, size: 10 });
-  y -= 15;
-
-  // Products
-  let subtotal = 0;
-  party.products.forEach(product => {
-    const total = product.quantity * product.price;
-    subtotal += total;
-    page.drawText(product.name, { x: 50, y, font, size: 10 });
-    page.drawText(product.quantity.toString(), { x: 300, y, font, size: 10 });
-    page.drawText(`€ ${product.price.toFixed(2)}`, { x: 350, y, font, size: 10 });
-    page.drawText(`€ ${total.toFixed(2)}`, { x: 450, y, font, size: 10 });
-    y -= 12;
-  });
-
-  // Invoice summary
-  const tax = subtotal * 0.07;
-  const total = subtotal + tax;
+  // ===== Horizontal Line =====
+  page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, thickness: 1, color: rgb(0, 0, 0) });
   y -= 20;
-  page.drawText(`Subtotal: € ${subtotal.toFixed(2)}`, { x: 350, y, font: fontBold, size: 10 });
-  y -= 12;
-  page.drawText(`Tax (7%): € ${tax.toFixed(2)}`, { x: 350, y, font: fontBold, size: 10 });
-  y -= 12;
-  page.drawText(`Total: € ${total.toFixed(2)}`, { x: 350, y, font: fontBold, size: 12 });
 
+  // ===== From / To Sections =====
+  const fromX = 50;
+  const toX = width / 2 + 10;
+  let fromY = y;
+  let toY = y;
+
+  // From Section (Your Company Info)
+  page.drawText("From:", { x: fromX, y: fromY, font: fontBold, size: 12 });
+  fromY -= 20;
+  const fromLines = [
+    "Dosa World Indisch Restaurant LG",
+    "Lummerheide 22 0073",
+    "210721 Hamburg",
+    "Centre",
+    "info@dosaworld.de",
+    "+49/852527495",
+    "dosaworld.de",
+    "Registration No: HRB 184384",
+    "VAT No: DE365419852"
+  ];
+  fromLines.forEach(line => { page.drawText(line, { x: fromX, y: fromY, font, size: 10 }); fromY -= 12; });
+
+  // To Section (Customer Info from backend)
+  page.drawText("To:", { x: toX, y: toY, font: fontBold, size: 12 });
+  toY -= 20;
+
+  // Use actual customer data from backend
+  const toLines = [
+    partyDetails.customerName,
+    ...partyDetails.address.split('\n').filter(line => line.trim()), // Split address by newlines
+    `Phone: ${partyDetails.phone}`,
+    `Email: ${partyDetails.email}`
+  ].filter(line => line && line.trim()); // Remove empty lines
+
+  // Ensure we don't exceed reasonable line count
+  const maxToLines = 8;
+  const displayToLines = toLines.slice(0, maxToLines);
+
+  displayToLines.forEach(line => {
+    page.drawText(line, { x: toX, y: toY, font, size: 10 });
+    toY -= 12;
+  });
+
+  y = Math.min(fromY, toY) - 20;
+
+  // ===== Table =====
+  const col1 = 50;   // Product
+  const col2 = 200;  // Quantity
+  const col3 = 280;  // Price
+  const col4 = 380;  // Tax
+  const col5 = 450;  // Total
+
+  // Table Header background
+  page.drawRectangle({
+    x: col1 - 2,
+    y: y - 4,
+    width: col5 + 60,
+    height: 18,
+    color: rgb(0, 0.5, 0.4),
+  });
+
+  // Table Header text
+  page.drawText("Product", { x: col1, y, font: fontBold, size: 10, color: rgb(1, 1, 1) });
+  page.drawText("Quantity", { x: col2, y, font: fontBold, size: 10, color: rgb(1, 1, 1) });
+  page.drawText("Price", { x: col3, y, font: fontBold, size: 10, color: rgb(1, 1, 1) });
+  page.drawText("Tax", { x: col4, y, font: fontBold, size: 10, color: rgb(1, 1, 1) });
+  page.drawText("Total", { x: col5, y, font: fontBold, size: 10, color: rgb(1, 1, 1) });
+
+  y -= 20;
+
+  // Calculate invoice summary
+  const invoiceSummary = calculateInvoiceSummary(partyDetails.products);
+
+  // Display all products
+  partyDetails.products.forEach((product: Product) => {
+    const productTotal = product.quantity * product.price;
+    const productTax = productTotal * 0.07; // 07% VAT per product
+
+    page.drawText(product.name, { x: col1, y, font, size: 10 });
+    page.drawText(product.quantity.toString(), { x: col2, y, font, size: 10 });
+    page.drawText(`€ ${product.price.toFixed(2)}`, { x: col3, y, font, size: 10 });
+    page.drawText(`€ ${productTax.toFixed(2)}`, { x: col4, y, font, size: 10 });
+    page.drawText(`€ ${productTotal.toFixed(2)}`, { x: col5, y, font, size: 10 });
+
+    y -= 20;
+
+    // Add page if content exceeds page height
+    if (y < 100) {
+      page.drawText("-- Continued on next page --", { x: col1, y, font, size: 10, color: rgb(0.5, 0.5, 0.5) });
+      const newPage = pdfDoc.addPage([595, 842]);
+      const { height: newHeight } = newPage.getSize();
+      y = newHeight - 50;
+
+      // Add table header on new page
+      newPage.drawRectangle({
+        x: col1 - 2,
+        y: y - 4,
+        width: col5 + 60,
+        height: 18,
+        color: rgb(0, 0.5, 0.4),
+      });
+      newPage.drawText("Product", { x: col1, y, font: fontBold, size: 10, color: rgb(1, 1, 1) });
+      newPage.drawText("Quantity", { x: col2, y, font: fontBold, size: 10, color: rgb(1, 1, 1) });
+      newPage.drawText("Price", { x: col3, y, font: fontBold, size: 10, color: rgb(1, 1, 1) });
+      newPage.drawText("Tax", { x: col4, y, font: fontBold, size: 10, color: rgb(1, 1, 1) });
+      newPage.drawText("Total", { x: col5, y, font: fontBold, size: 10, color: rgb(1, 1, 1) });
+      y -= 20;
+    }
+  });
+
+  y -= 20;
+
+  const summaryX = col5;
+  const tableX = summaryX - 50;
+  const rowHeight = 20;
+  const col1Width = 60;
+  const col2Width = 100;
+  page.drawRectangle({
+    x: tableX,
+    y: y - 5,           // slightly lower to cover text height
+    width: col1Width + col2Width,
+    height: rowHeight,
+    color: rgb(0.8, 0.8, 0.8), // light gray background
+  });
+
+  // Draw header text on top
+  page.drawText("Name", { x: tableX + 5, y, font: fontBold, size: 10, color: rgb(0, 0, 0) });
+  page.drawText("Invoice Summary", { x: tableX + col1Width + 5, y, font: fontBold, size: 10, color: rgb(0, 0, 0) });
+
+  y -= rowHeight;
+  // Draw Subtotal row
+  page.drawText("Subtotal", { x: tableX, y, font, size: 10 });
+  page.drawText(invoiceSummary.subtotal.toFixed(2), { x: tableX + col1Width, y, font, size: 10 });
+  y -= rowHeight;
+
+  // Draw Tax row
+  page.drawText("Tax", { x: tableX, y, font, size: 10 });
+  page.drawText(invoiceSummary.taxAmount.toFixed(2), { x: tableX + col1Width, y, font, size: 10 });
+  y -= rowHeight;
+
+  // Draw Total row
+  page.drawText("Total", { x: tableX, y, font: fontBold, size: 10 });
+  page.drawText(invoiceSummary.total.toFixed(2), { x: tableX + col1Width, y, font: fontBold, size: 10 });
+  y -= rowHeight;
   y -= 30;
-  page.drawText("Terms: 7% VAT Tax is inclusive.", { x: 50, y, font, size: 10 });
+
+  // ===== Additional Details =====
+  const bottomMargin = 50; // distance from bottom
+  let bottomY = bottomMargin + 30; // adjust spacing above bottom
+
+  page.drawText("Terms", { x: 50, y: bottomY, font: fontBold, size: 10 });
+  page.drawText(`7% VAT Tax is inclusive`, { x: 50, y: bottomY - 15, font, size: 10 });
+
 
   const pdfBytes = await pdfDoc.save();
   return new Blob([pdfBytes], { type: 'application/pdf' });
 };
 
+// ===== Download PDF =====
+export const downloadInvoicePDF = async (party: any) => {
+  try {
+    MySwal.fire({
+      title: 'Generating Invoice...',
+      text: 'Please wait while we prepare your invoice.',
+      allowOutsideClick: false,
+      didOpen: () => {
+        MySwal.showLoading();
+      }
+    });
 
-// Function to download PDF
-const downloadInvoicePDF = async (party: Party) => {
-  const blob = await generateInvoicePDF(party);
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `Invoice-${String(party.id).padStart(4,'0')}.pdf`;
-  link.click();
-  URL.revokeObjectURL(url);
+    const logoBytes = await fetchLogoBytes(Logo);
+    const blob = await generateInvoicePDF(party, logoBytes);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Invoice-${String(party.id).padStart(4, '0')}-${party.customerName.replace(/\s+/g, '_')}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    MySwal.close();
+  } catch (error) {
+    console.error("Error downloading PDF:", error);
+    MySwal.fire('Error', 'Failed to download invoice. Please try again.', 'error');
+  }
 };
 
-// Function to view PDF in new tab
-const viewInvoicePDF = async (party: Party) => {
-  const blob = await generateInvoicePDF(party);
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank");
+// ===== View PDF =====
+export const viewInvoicePDF = async (party: any) => {
+  try {
+    MySwal.fire({
+      title: 'Generating Preview...',
+      text: 'Please wait while we prepare your invoice.',
+      allowOutsideClick: false,
+      didOpen: () => {
+        MySwal.showLoading();
+      }
+    });
+
+    console.log('party == ', party)
+    const logoBytes = await fetchLogoBytes(Logo);
+    const blob = await generateInvoicePDF(party, logoBytes);
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+
+    MySwal.close();
+  } catch (error) {
+    console.error("Error viewing PDF:", error);
+    MySwal.fire('Error', 'Failed to generate invoice preview. Please try again.', 'error');
+  }
 };
 
 export default function PartyManagement() {
@@ -384,9 +593,9 @@ export default function PartyManagement() {
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
           <p className="text-sm">{error}</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="mt-2"
             onClick={() => setError(null)}
           >
@@ -448,7 +657,7 @@ export default function PartyManagement() {
 
       {/* Party Management Table */}
       <Card className="shadow-sm border">
-        <CardHeader 
+        <CardHeader
           className="border-b p-3"
           style={{ backgroundColor: themeColors.primary, color: "white" }}
         >
@@ -461,7 +670,7 @@ export default function PartyManagement() {
               {loading && <Loader2 className="w-4 h-4 animate-spin text-white" />}
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button 
+                  <Button
                     className="shadow-sm hover:shadow transition-all text-sm h-8"
                     style={{ backgroundColor: "white", color: themeColors.primary }}
                     disabled={loading}
@@ -566,10 +775,10 @@ export default function PartyManagement() {
                       </div>
                       <div className="space-y-1">
                         <label className="text-sm font-medium">Issued Date</label>
-                        <Input 
-                          type="date" 
-                          value={form.issuedDate} 
-                          readOnly 
+                        <Input
+                          type="date"
+                          value={form.issuedDate}
+                          readOnly
                           className="h-9 cursor-not-allowed bg-gray-50"
                         />
                       </div>
@@ -641,9 +850,9 @@ export default function PartyManagement() {
                           </div>
                         </div>
                       ))}
-                      <Button 
-                        variant="outline" 
-                        className="w-full h-8 text-sm" 
+                      <Button
+                        variant="outline"
+                        className="w-full h-8 text-sm"
                         onClick={addProductRow}
                         style={{ borderColor: themeColors.primary, color: themeColors.primary }}
                         disabled={loading}
@@ -670,7 +879,7 @@ export default function PartyManagement() {
                       </select>
                     </div>
 
-                    <Button 
+                    <Button
                       className="w-full h-9 font-medium"
                       style={{ backgroundColor: themeColors.primary }}
                       onClick={handleSubmit}
@@ -762,8 +971,8 @@ export default function PartyManagement() {
                     <td className="p-2">
                       <div className="flex gap-1">
                         {/* View Button */}
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           className="h-7 w-7 p-0"
                           style={{ borderColor: themeColors.primary, color: themeColors.primary }}
@@ -774,8 +983,8 @@ export default function PartyManagement() {
                           <Eye className="w-3 h-3" />
                         </Button>
                         {/* Download Button */}
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           className="h-7 w-7 p-0"
                           style={{ borderColor: "#3b82f6", color: "#3b82f6" }}
@@ -786,8 +995,8 @@ export default function PartyManagement() {
                           <Download className="w-3 h-3" />
                         </Button>
                         {/* Edit Button */}
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           className="h-7 w-7 p-0"
                           style={{ borderColor: themeColors.primary, color: themeColors.primary }}
@@ -798,8 +1007,8 @@ export default function PartyManagement() {
                           <Edit className="w-3 h-3" />
                         </Button>
                         {/* Delete Button */}
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="destructive"
                           className="h-7 w-7 p-0"
                           onClick={() => handleDelete(p.id)}
