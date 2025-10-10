@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { api } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -48,7 +49,7 @@ const MySwal = withReactContent(Swal)
 dayjs.extend(isoWeek);
 dayjs.extend(customParseFormat);
 
-const API_URL = "https://dosaworld-backend.vercel.app/api/billings";
+// const API_URL = "https://dosaworld-backend.vercel.app/api/billings";
 const COLORS = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 export default function EODBilling() {
@@ -73,7 +74,7 @@ export default function EODBilling() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(API_URL);
+      const res = await api.get("/billings");
       setData(res.data?.data || []);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -94,7 +95,7 @@ export default function EODBilling() {
     e.preventDefault();
     try {
       setLoading(true);
-      await axios.post(API_URL, form);
+      await api.post("/billings", form);
 
       // Show success alert
       await MySwal.fire({
@@ -127,27 +128,6 @@ export default function EODBilling() {
       setLoading(false);
     }
   };
-
-  // Export CSV
-  // const downloadReport = () => {
-  //   let csv = "Date,Card,Cash,Handled By,Trinkgeld,Trinkgeld Bar,Paid\n";
-  //   let totals = { card: 0, cash: 0, trinkgeld: 0, trinkgeldBar: 0, paid: 0 };
-  //   data.forEach((row: any) => {
-  //     csv += `${row.date},${row.card},${row.cash},${row.handledBy},${row.trinkgeld},${row.trinkgeldBar},${row.paid}\n`;
-  //     totals.card += Number(row.card || 0);
-  //     totals.cash += Number(row.cash || 0);
-  //     totals.trinkgeld += Number(row.trinkgeld || 0);
-  //     totals.trinkgeldBar += Number(row.trinkgeldBar || 0);
-  //     totals.paid += Number(row.paid || 0);
-  //   });
-  //   csv += `Totals,${totals.card},${totals.cash},,${totals.trinkgeld},${totals.trinkgeldBar},${totals.paid}`;
-  //   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  //   const url = URL.createObjectURL(blob);
-  //   const a = document.createElement("a");
-  //   a.href = url;
-  //   a.download = `eod_report_${dayjs().format("YYYY-MM-DD")}.csv`;
-  //   a.click();
-  // };
 
   const downloadReport = (rows: any[]) => {
     let csv = "Date,Card,Cash,Handled By,Trinkgeld,Trinkgeld Bar,Paid\n";
