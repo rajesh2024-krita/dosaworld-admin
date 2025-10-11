@@ -1788,13 +1788,12 @@ export default function PartyManagement() {
   }
 
   return (
-    <div className="p-4">
+    <div className="">
       {/* Header Section */}
       <div className="mb-4">
-        <h1 className="text-2xl font-bold" style={{ color: themeColors.primary }}>
+        <h1 className="text-base sm:text-lg font-semibold uppercase">
           Party Management
         </h1>
-        <p className="text-sm text-gray-600">Manage your events, parties, and customer details</p>
       </div>
 
       {/* Error Display */}

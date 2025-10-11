@@ -694,7 +694,7 @@ const InventoryManagement: React.FC = () => {
 
   // UI
   return (
-    <div className="space-y-6 p-4 max-w-7xl mx-auto">
+    <div className="">
       {/* Toast Notifications */}
       <ToastContainer 
         toasts={toasts} 
