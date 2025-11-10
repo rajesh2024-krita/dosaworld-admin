@@ -151,134 +151,134 @@ export default function MenuManagement() {
 
   // ================== CATEGORY CRUD ==================
   const handleCreateCategory = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault()
-  if (isLoading) return
+    e.preventDefault()
+    if (isLoading) return
 
-  setIsLoading(true)
-  const formData = new FormData(e.currentTarget)
-
-  try {
-    const res = await api.post("/categories/create", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-      validateStatus: (status) => status < 500, // only throw for server errors
-    })
-
-    // Check response from server
-    if (res.status === 200 || res.status === 201) {
-      await MySwal.fire({
-        icon: "success",
-        title: "Created!",
-        text: "Category has been created successfully.",
-        timer: 1500,
-        showConfirmButton: false,
-      })
-
-      fetchCategories()
-      setIsCreateCategoryOpen(false)
-      e.currentTarget.reset()
-    } else {
-      // Show error if server returns 4xx
-      await MySwal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: res.data?.error || "Failed to create category",
-      })
-    }
-  } catch (err) {
-    console.error("❌ Error creating category:", err)
-  } finally {
-    setIsLoading(false)
-  }
-}
-
-const handleEditCategory = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault()
-  if (!selectedCategory || isLoading) return
-
-  setIsLoading(true)
-  try {
+    setIsLoading(true)
     const formData = new FormData(e.currentTarget)
 
-    const imageFile = formData.get("imageFile") as File | null
-    if (!imageFile || imageFile.size === 0) {
-      formData.delete("imageFile")
-    }
-
-    // API call to update category
-    const res = await api.put(`/categories/update/${selectedCategory.id}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-      validateStatus: (status) => status < 500, // only throw for server errors
-    })
-
-    // Show success alert if response is OK
-    if (res.status === 200 || res.status === 201) {
-      await MySwal.fire({
-        icon: "success",
-        title: "Updated!",
-        text: "Category has been updated successfully.",
-        timer: 1500,
-        showConfirmButton: false,
-      })
-
-      fetchCategories()
-      setIsEditCategoryOpen(false)
-      setSelectedCategory(null)
-    } else {
-      // Show error alert if server returns 4xx
-      await MySwal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: res.data?.error || "Failed to update category",
-      })
-    }
-  } catch (err) {
-    console.error("❌ Error updating category:", err)
-    await MySwal.fire({
-      icon: "error",
-      title: "Oops...",
-      text: "Failed to update category",
-    })
-  } finally {
-    setIsLoading(false)
-  }
-}
-
-const handleDeleteCategory = async (id: number) => {
-  const result = await MySwal.fire({
-    title: "Are you sure?",
-    text: "This category will be permanently deleted!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Yes, delete it!",
-    cancelButtonText: "Cancel",
-    confirmButtonColor: "#d33",
-  })
-
-  if (result.isConfirmed) {
     try {
-      await api.delete(`/categories/${id}`)
-
-      // Show success alert
-      await MySwal.fire({
-        icon: "success",
-        title: "Deleted!",
-        text: "Category has been deleted successfully.",
-        timer: 1500,
-        showConfirmButton: false,
+      const res = await api.post("/categories/create", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        validateStatus: (status) => status < 500, // only throw for server errors
       })
 
-      fetchCategories()
-      fetchItems()
+      // Check response from server
+      if (res.status === 200 || res.status === 201) {
+        await MySwal.fire({
+          icon: "success",
+          title: "Created!",
+          text: "Category has been created successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        })
+
+        fetchCategories()
+        setIsCreateCategoryOpen(false)
+        e.currentTarget.reset()
+      } else {
+        // Show error if server returns 4xx
+        await MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: res.data?.error || "Failed to create category",
+        })
+      }
     } catch (err) {
-      console.error("Error deleting category:", err)
-      MySwal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Failed to delete category",
-      })
+      console.error("❌ Error creating category:", err)
+    } finally {
+      setIsLoading(false)
     }
   }
-}
+
+  const handleEditCategory = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!selectedCategory || isLoading) return
+
+    setIsLoading(true)
+    try {
+      const formData = new FormData(e.currentTarget)
+
+      const imageFile = formData.get("imageFile") as File | null
+      if (!imageFile || imageFile.size === 0) {
+        formData.delete("imageFile")
+      }
+
+      // API call to update category
+      const res = await api.put(`/categories/update/${selectedCategory.id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        validateStatus: (status) => status < 500, // only throw for server errors
+      })
+
+      // Show success alert if response is OK
+      if (res.status === 200 || res.status === 201) {
+        await MySwal.fire({
+          icon: "success",
+          title: "Updated!",
+          text: "Category has been updated successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        })
+
+        fetchCategories()
+        setIsEditCategoryOpen(false)
+        setSelectedCategory(null)
+      } else {
+        // Show error alert if server returns 4xx
+        await MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: res.data?.error || "Failed to update category",
+        })
+      }
+    } catch (err) {
+      console.error("❌ Error updating category:", err)
+      await MySwal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to update category",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleteCategory = async (id: number) => {
+    const result = await MySwal.fire({
+      title: "Are you sure?",
+      text: "This category will be permanently deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#d33",
+    })
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/categories/${id}`)
+
+        // Show success alert
+        await MySwal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "Category has been deleted successfully.",
+          timer: 1500,
+          showConfirmButton: false,
+        })
+
+        fetchCategories()
+        fetchItems()
+      } catch (err) {
+        console.error("Error deleting category:", err)
+        MySwal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Failed to delete category",
+        })
+      }
+    }
+  }
 
 
   // ================== ITEM CRUD ==================
@@ -515,9 +515,9 @@ const handleDeleteCategory = async (id: number) => {
               )}
 
               {/* Items Table */}
-              <div className="overflow-x-auto border rounded-lg">
-                <table className="min-w-full text-left">
-                  <thead className="bg-gray-100 uppercase">
+              <div className="overflow-x-auto border rounded-lg border-gray-200 dark:border-gray-700">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-muted-foreground/10 text-gray-700 dark:text-gray-200 uppercase border-b border-gray-200 dark:border-gray-700">
                     <tr>
                       <th className="p-2">#</th>
                       <th className="p-2">Code</th>
@@ -527,10 +527,10 @@ const handleDeleteCategory = async (id: number) => {
                       <th className="p-2">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="bg-muted-foreground/10 text-gray-900 dark:text-gray-100">
                     {isItemsLoading ? (
                       <tr>
-                        <td colSpan={6} className="p-4 text-center text-gray-500">
+                        <td colSpan={6} className="p-4 text-center text-gray-500 dark:text-gray-400">
                           Loading items...
                         </td>
                       </tr>
@@ -538,22 +538,38 @@ const handleDeleteCategory = async (id: number) => {
                       paginatedItems.map((it, idx) => {
                         const cat = categories.find(c => c.id === it.category_id)
                         return (
-                          <tr key={it.id} className="border-b hover:bg-gray-50">
+                          <tr
+                            key={it.id}
+                            className="border-b border-gray-200 dark:border-gray-700 transition"
+                          >
                             <td className="p-2">{getSerial(idx, itemPage, itemsPerPage)}</td>
                             <td className="p-2">{it.code}</td>
                             <td className="p-2">{it.name}</td>
                             <td className="p-2">€{it.price}</td>
                             <td className="p-2">{cat?.name}</td>
                             <td className="p-2 flex gap-1">
-                              <Button size="sm" variant="outline"
-                                onClick={() => { setSelectedItem(it); setSelectedItemCategory(cat || null); setIsEditItemOpen(true) }}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedItem(it)
+                                  setSelectedItemCategory(cat || null)
+                                  setIsEditItemOpen(true)
+                                }}
+                              >
                                 <Edit />
                               </Button>
                               <Button size="sm" variant="outline" onClick={() => handleDeleteItem(it.id)}>
                                 <Trash2 />
                               </Button>
-                              <Button size="sm" variant="outline"
-                                onClick={() => { setSelectedItem(it); setIsViewItemOpen(true); }}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedItem(it)
+                                  setIsViewItemOpen(true)
+                                }}
+                              >
                                 <Eye />
                               </Button>
                             </td>
@@ -562,7 +578,7 @@ const handleDeleteCategory = async (id: number) => {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={6} className="p-4 text-center text-gray-500">
+                        <td colSpan={6} className="p-4 text-center text-gray-500 dark:text-gray-400">
                           {itemSearch ? "No items found matching your search." : "No items available."}
                         </td>
                       </tr>
@@ -570,6 +586,7 @@ const handleDeleteCategory = async (id: number) => {
                   </tbody>
                 </table>
               </div>
+
 
               {/* ITEMS PAGINATION */}
               {totalItemPages > 1 && (

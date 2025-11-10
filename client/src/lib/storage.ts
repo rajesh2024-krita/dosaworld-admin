@@ -4,7 +4,7 @@ export class LocalStorage {
   private static readonly ROLES_KEY = 'rbac-roles';
   private static readonly SESSION_KEY = 'rbac-session';
 
-  private static readonly API_BASE = "https://dosaworld-backend.vercel.app/api"; // backend URL
+  private static readonly API_BASE = "https://api.dosaworld.de/api"; // backend URL
 
   // ===================== Users =====================
   static getUsers(): any[] {

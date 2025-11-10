@@ -7,7 +7,7 @@ export interface AuthUser extends User {
 
 export class AuthService {
   static async login(credentials: LoginUser): Promise<AuthUser> {
-    const response = await fetch("https://dosaworld-backend.vercel.app/api/auth/login", {
+    const response = await fetch("https://api.dosaworld.de/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
@@ -24,7 +24,7 @@ export class AuthService {
   }
 
   static async register(userData: any): Promise<AuthUser> {
-    const response = await fetch("https://dosaworld-backend.vercel.app/api/auth/register", {
+    const response = await fetch("https://api.dosaworld.de/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),

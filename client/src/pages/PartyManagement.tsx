@@ -237,12 +237,12 @@ const generateInvoicePDF = async (party: any, logoBytes: Uint8Array) => {
   page.drawText("From:", { x: fromX, y: fromY, font: fontBold, size: 12 });
   fromY -= 20;
   const fromLines = [
-    "Dosa World Indisch Restaurant LG",
-    "Lummerheide 22 0073",
-    "210721 Hamburg",
-    "Centre",
+    "Dosa World Indisch Restaurant UG",
+    "Lämmertwiete 2",
+    "21073 Hamburg",
+    "Germany",
     "info@dosaworld.de",
-    "+49/852527495",
+    "+494032527895",
     "dosaworld.de",
     "Registration No: HRB 184384",
     "VAT No: DE365419852"

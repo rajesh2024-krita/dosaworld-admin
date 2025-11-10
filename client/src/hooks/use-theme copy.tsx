@@ -13,9 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem('rbac-theme');
-    // return (stored as Theme) || 'system';
-    return stored || 'light';
-
+    return (stored as Theme) || 'system';
   });
 
   const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light');

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { OfferSection, ApiResponse } from '../Types/OfferSection';
 
 // const API_BASE_URL = 'http://localhost:3000/api';
-const API_BASE_URL = 'https://dosaworld-backend.vercel.app/api';
+const API_BASE_URL = 'https://api.dosaworld.de/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

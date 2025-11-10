@@ -50,7 +50,7 @@ export default function Header({ onToggleSidebar, title }: HeaderProps) {
         
         <div className="flex items-center space-x-4">
           {/* Theme Toggle */}
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
           
           {/* Notifications */}
           {/* <div className="relative">
