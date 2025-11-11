@@ -475,7 +475,7 @@ export default function MenuManagement() {
                         <Input type="number" name="code" placeholder="Item Code" required />
                         <Input name="name" placeholder="Item Name" required />
                         <Textarea name="description" placeholder="Description" />
-                        <Input name="price" type="number" placeholder="Price" required />
+                        <Input name="price" type="number" placeholder="Price" step="any" required />
                         <Combobox value={selectedItemCategory} onChange={setSelectedItemCategory}>
                           <div className="relative">
                             <Combobox.Input
@@ -709,6 +709,7 @@ export default function MenuManagement() {
                     name="price"
                     type="number"
                     defaultValue={selectedItem.price}
+                    step="any"
                     required
                     readOnly={isViewItemOpen}
                   />
