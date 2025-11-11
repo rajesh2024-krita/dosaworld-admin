@@ -128,15 +128,15 @@ const OfferSectionForm: React.FC<{
       }
 
       // ✅ Skip API call if no change
-      if (data.entries().next().done) {
-        MySwal.fire({
-          icon: "info",
-          title: "No changes detected",
-          text: "Nothing to update.",
-        });
-        setLoading(false);
-        return;
-      }
+      // if (data.entries().next().done) {
+      //   MySwal.fire({
+      //     icon: "info",
+      //     title: "No changes detected",
+      //     text: "Nothing to update.",
+      //   });
+      //   setLoading(false);
+      //   return;
+      // }
 
       // ✅ API call
       const response = section?._id
