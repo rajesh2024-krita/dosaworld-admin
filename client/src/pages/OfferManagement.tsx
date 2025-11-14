@@ -39,21 +39,28 @@ const OfferSectionForm: React.FC<{
         //   ? section.buckets
         //   : Object.values(section.buckets || []),
         buckets: Array.isArray(section.buckets)
-        ? section.buckets.map((b: any) => ({ ...b, isExisting: true })) // ✅ mark as existing
-        : Object.values(section.buckets || []).map((b: any) => ({ ...b, isExisting: true })),
+          ? section.buckets.map((b: any) => ({ ...b, isExisting: true })) // ✅ mark as existing
+          : Object.values(section.buckets || []).map((b: any) => ({ ...b, isExisting: true })),
         biryaniImage: null,
         isActive: section.isActive,
       });
 
-      const IMAGE_BASE_URL = 'https://dosaworldadmin.kritatechnosolutions.com';
+      console.log('section == ', section)
+
+      const IMAGE_BASE_URL = 'https://dosaworld.de/';
       if (section.biryaniImage) {
-        const biryaniUrl = section.biryaniImage.startsWith('http')
-          ? section.biryaniImage
-          : `${IMAGE_BASE_URL}${section.biryaniImage}`;
+        // Remove the server path prefix
+        const cleanedPath = section.biryaniImage.replace("/var/www/dosaworld-frontend/dist/", "");
+
+        const biryaniUrl = cleanedPath.startsWith("http")
+          ? cleanedPath
+          : `${IMAGE_BASE_URL}${cleanedPath}`;
+
         setBiryaniPreview(biryaniUrl);
       } else {
         setBiryaniPreview(null);
       }
+
     }
   }, [section]);
 
@@ -208,59 +215,59 @@ const OfferSectionForm: React.FC<{
           className='w-full p-3 border rounded-lg'
         />
       </div>
-<div className='mb-6'>
-  <h3 className='text-lg font-semibold mb-3 text-gray-800'>Offer Items *</h3>
+      <div className='mb-6'>
+        <h3 className='text-lg font-semibold mb-3 text-gray-800'>Offer Items *</h3>
 
-  {formData.buckets.map((bucket: any, index: number) => (
-    <div key={index} className='mb-4 p-4 border rounded-lg bg-gray-50 shadow-sm'>
-      <div className='flex justify-between items-center mb-2'>
-        <span className='font-semibold'>Item {index + 1}</span>
-        <button
+        {formData.buckets.map((bucket: any, index: number) => (
+          <div key={index} className='mb-4 p-4 border rounded-lg bg-gray-50 shadow-sm'>
+            <div className='flex justify-between items-center mb-2'>
+              <span className='font-semibold'>Item {index + 1}</span>
+              <button
+                type='button'
+                onClick={() => removeBucket(index)}
+                className='text-red-500 hover:underline'
+              >
+                Remove
+              </button>
+            </div>
+
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+              <Input
+                placeholder='Name *'
+                value={bucket.name}
+                onChange={(e) => handleBucketChange(index, 'name', e.target.value)}
+                required
+                disabled={bucket.isExisting} // ✅ disable if existing
+                className={`p-3 border rounded-lg ${bucket.isExisting ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              />
+              <Input
+                placeholder='People *'
+                value={bucket.people}
+                onChange={(e) => handleBucketChange(index, 'people', e.target.value)}
+                required
+                disabled={bucket.isExisting} // ✅ disable if existing
+                className={`p-3 border rounded-lg ${bucket.isExisting ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              />
+              <Input
+                placeholder='Price *'
+                value={bucket.price}
+                onChange={(e) => handleBucketChange(index, 'price', e.target.value)}
+                required
+                disabled={bucket.isExisting} // ✅ disable if existing
+                className={`p-3 border rounded-lg ${bucket.isExisting ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              />
+            </div>
+          </div>
+        ))}
+
+        <Button
           type='button'
-          onClick={() => removeBucket(index)}
-          className='text-red-500 hover:underline'
+          onClick={addBucket}
+          className='mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700'
         >
-          Remove
-        </button>
+          + Add Bucket
+        </Button>
       </div>
-
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-        <Input
-          placeholder='Name *'
-          value={bucket.name}
-          onChange={(e) => handleBucketChange(index, 'name', e.target.value)}
-          required
-          disabled={bucket.isExisting} // ✅ disable if existing
-          className={`p-3 border rounded-lg ${bucket.isExisting ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-        />
-        <Input
-          placeholder='People *'
-          value={bucket.people}
-          onChange={(e) => handleBucketChange(index, 'people', e.target.value)}
-          required
-          disabled={bucket.isExisting} // ✅ disable if existing
-          className={`p-3 border rounded-lg ${bucket.isExisting ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-        />
-        <Input
-          placeholder='Price *'
-          value={bucket.price}
-          onChange={(e) => handleBucketChange(index, 'price', e.target.value)}
-          required
-          disabled={bucket.isExisting} // ✅ disable if existing
-          className={`p-3 border rounded-lg ${bucket.isExisting ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-        />
-      </div>
-    </div>
-  ))}
-
-  <Button
-    type='button'
-    onClick={addBucket}
-    className='mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700'
-  >
-    + Add Bucket
-  </Button>
-</div>
 
 
 

@@ -46,14 +46,14 @@ const OfferSectionForm: React.FC<OfferSectionFormProps> = ({
         isActive: section.isActive,
       });
 
-      const IMAGE_BASE_URL = 'https://dosaworldadmin.kritatechnosolutions.com';
+      const IMAGE_BASE_URL = 'https://dosaworld.de';
       if (section.biryaniImage) {
         const biryaniUrl = section.biryaniImage.startsWith('http')
           ? section.biryaniImage
-          : `${IMAGE_BASE_URL}${section.biryaniImage}`;
+          : `${IMAGE_BASE_URL}/uploads/categories${section.biryaniImage}`;
         setBiryaniPreview(biryaniUrl);
       } else {
-        setBiryaniPreview(null);
+        setBiryaniPreview(null);                 
       }
     }
   }, [section]);
