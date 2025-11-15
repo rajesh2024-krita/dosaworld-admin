@@ -20,7 +20,7 @@ const OfferSectionList: React.FC = () => {
       const response = await offerSectionService.getAll();
       setSections(response.data || []);
     } catch (error) {
-      console.error('Error loading offer sections:', error);
+      // console.error('Error loading offer sections:', error);
       alert('Error loading offer sections');
     } finally {
       setLoading(false);
@@ -33,7 +33,7 @@ const OfferSectionList: React.FC = () => {
         await offerSectionService.delete(id);
         loadSections();
       } catch (error) {
-        console.error('Error deleting offer section:', error);
+        // console.error('Error deleting offer section:', error);
         alert('Error deleting offer section');
       }
     }

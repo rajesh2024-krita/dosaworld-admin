@@ -11,10 +11,10 @@ const api = axios.create({
 // Send FormData when creating/updating offer section
 export const offerSectionService = {
   create: async (sectionData: FormData) => {
-    console.log('=== Service: Creating Offer Section (FormData) ===');
-    for (let [key, value] of sectionData.entries()) {
-      console.log(`${key}:`, value);
-    }
+    // console.log('=== Service: Creating Offer Section (FormData) ===');
+    // for (let [key, value] of sectionData.entries()) {
+    //   console.log(`${key}:`, value);
+    // }
 
     return await api.post('/offer-sections', sectionData, {
       headers: {
@@ -24,10 +24,10 @@ export const offerSectionService = {
   },
 
   update: async (id: string, sectionData: FormData) => {
-    console.log('=== Service: Updating Offer Section (FormData) ===');
-    for (let [key, value] of sectionData.entries()) {
-      console.log(`${key}:`, value);
-    }
+    // console.log('=== Service: Updating Offer Section (FormData) ===');
+    // for (let [key, value] of sectionData.entries()) {
+    //   console.log(`${key}:`, value);
+    // }
 
     return await api.put(`/offer-sections/${id}`, sectionData, {
       headers: {

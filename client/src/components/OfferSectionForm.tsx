@@ -124,7 +124,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     data.append('description', formData.description?.trim() || '');
     data.append('isActive', String(!!formData.isActive));
 
-    console.log('data == ', data)
+    // console.log('data == ', data)
 
     // ✅ Handle buckets as individual fields (most common backend expectation)
     if (Array.isArray(formData.buckets)) {
@@ -147,11 +147,11 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
 
     // ✅ Debug FormData content
-    console.log('--- FormData Contents ---');
-    for (let [key, value] of data.entries()) {
-      console.log(`${key}:`, value);
-    }
-    console.log('-------------------------');
+    // console.log('--- FormData Contents ---');
+    // for (let [key, value] of data.entries()) {
+    //   console.log(`${key}:`, value);
+    // }
+    // console.log('-------------------------');
 
     // ✅ Send to backend
     if (section?._id) {
@@ -168,7 +168,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     onSave();
   } catch (err: any) {
-    console.error('Error saving offer section:', err);
+    // console.error('Error saving offer section:', err);
     const errorMessage =
       err.response?.data?.message ||
       err.message ||

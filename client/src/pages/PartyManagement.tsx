@@ -75,7 +75,7 @@ const fetchLogoBytes = async (url: string) => {
     const arrayBuffer = await response.arrayBuffer();
     return new Uint8Array(arrayBuffer);
   } catch (error) {
-    console.error("Error fetching logo:", error);
+    // console.error("Error fetching logo:", error);
     // Return a placeholder or empty array to prevent complete failure
     return new Uint8Array();
   }
@@ -108,11 +108,11 @@ const embedImageSafely = async (pdfDoc: PDFDocument, logoBytes: Uint8Array) => {
     } else if (isJPEG(logoBytes)) {
       return await pdfDoc.embedJpg(logoBytes);
     } else {
-      console.warn("Logo is not in PNG or JPEG format, creating text fallback");
+      // console.warn("Logo is not in PNG or JPEG format, creating text fallback");
       return null;
     }
   } catch (error) {
-    console.error("Error embedding logo:", error);
+    // console.error("Error embedding logo:", error);
     return null;
   }
 };
@@ -126,7 +126,7 @@ const fetchPartyDetails = async (partyId: number) => {
     }
     throw new Error(data.message || "Failed to fetch party details");
   } catch (error) {
-    console.error("Error fetching party details:", error);
+    // console.error("Error fetching party details:", error);
     throw error;
   }
 };
@@ -423,7 +423,7 @@ export const downloadInvoicePDF = async (party: any) => {
 
     MySwal.close();
   } catch (error) {
-    console.error("Error downloading PDF:", error);
+    // console.error("Error downloading PDF:", error);
     MySwal.fire('Error', 'Failed to download invoice. Please try again.', 'error');
   }
 };
@@ -463,7 +463,7 @@ export const viewInvoicePDF = async (party: any) => {
 
     MySwal.close();
   } catch (error) {
-    console.error("Error viewing PDF:", error);
+    // console.error("Error viewing PDF:", error);
     MySwal.fire('Error', 'Failed to generate invoice preview. Please try again.', 'error');
   }
 };
@@ -523,7 +523,7 @@ export default function PartyManagement() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch parties")
-      console.error("Error fetching parties:", err)
+      // console.error("Error fetching parties:", err)
     } finally {
       setLoading(false)
     }
@@ -554,7 +554,7 @@ export default function PartyManagement() {
           invoicePdf: pdfBase64, // Add PDF data to request
         };
       } catch (error) {
-        console.error("Error generating PDF for new party:", error);
+        // console.error("Error generating PDF for new party:", error);
         // Continue without PDF if generation fails
       }
     }
@@ -587,7 +587,7 @@ export default function PartyManagement() {
           invoicePdf: pdfBase64, // Add PDF data to request
         };
       } catch (error) {
-        console.error("Error generating PDF for updated party:", error);
+        // console.error("Error generating PDF for updated party:", error);
         // Continue without PDF if generation fails
       }
     }
@@ -681,7 +681,7 @@ export default function PartyManagement() {
         }
       } catch (err) {
         MySwal.fire('Error', err instanceof Error ? err.message : 'Failed to delete party', 'error')
-        console.error('Error deleting party:', err)
+        // console.error('Error deleting party:', err)
       }
     }
   }
@@ -691,7 +691,7 @@ export default function PartyManagement() {
       const response = await updatePartyStatus(id, status)
       const result = response.data
 
-      console.log("Status update API response:", result)
+      // console.log("Status update API response:", result)
 
       if (result.success && result.data) {
         setParties((prev) =>
@@ -708,7 +708,7 @@ export default function PartyManagement() {
       const msg = err instanceof Error ? err.message : 'Failed to update status'
       setError(msg)
       MySwal.fire('Error', msg, 'error')
-      console.error('Error updating status:', err)
+      // console.error('Error updating status:', err)
     }
   }
 

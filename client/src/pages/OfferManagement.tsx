@@ -45,7 +45,7 @@ const OfferSectionForm: React.FC<{
         isActive: section.isActive,
       });
 
-      console.log('section == ', section)
+      // console.log('section == ', section)
 
       const IMAGE_BASE_URL = 'https://dosaworld.de/';
       if (section.biryaniImage) {
@@ -104,7 +104,7 @@ const OfferSectionForm: React.FC<{
     setLoading(true);
 
     try {
-      console.log("🟢 formData before sending:", formData);
+      // console.log("🟢 formData before sending:", formData);
 
       const data = new FormData();
 
@@ -132,10 +132,10 @@ const OfferSectionForm: React.FC<{
       }
 
       // ✅ Debug FormData
-      console.log("🧾 Final FormData before send:");
-      for (let [key, value] of data.entries()) {
-        console.log(`FormData → ${key}:`, value);
-      }
+      // console.log("🧾 Final FormData before send:");
+      // for (let [key, value] of data.entries()) {
+      //   console.log(`FormData → ${key}:`, value);
+      // }
 
       // ✅ Skip API call if no change
       if (data.entries().next().done) {
@@ -163,7 +163,7 @@ const OfferSectionForm: React.FC<{
 
       onSave();
     } catch (err: any) {
-      console.error("❌ Error saving offer section:", err);
+      // console.error("❌ Error saving offer section:", err);
       const msg = err.response?.data?.message || err.message || "Save failed";
       MySwal.fire({ icon: "error", title: "Error!", text: msg });
     } finally {
@@ -335,7 +335,7 @@ const OfferManagement: React.FC = () => {
       const response = await offerSectionService.getAll();
       setSections(response.data || []);
     } catch (error) {
-      console.error('Error loading offer sections:', error);
+      // console.error('Error loading offer sections:', error);
       alert('Error loading offer sections');
     }
   };
@@ -370,7 +370,7 @@ const OfferManagement: React.FC = () => {
         loadSections();
         loadActiveSection(); // Refresh active section in case it was deleted
       } catch (error) {
-        console.error('Error deleting offer section:', error);
+        // console.error('Error deleting offer section:', error);
         MySwal.fire('Error!', 'Error deleting offer section', 'error');
       }
     }

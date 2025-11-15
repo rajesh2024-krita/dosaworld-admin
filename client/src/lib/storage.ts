@@ -20,7 +20,7 @@ export class LocalStorage {
     users.push(user);
     this.saveUsers(users);
 
-    console.log('users == ', users)
+    // console.log('users == ', users)
 
     await this.logActivity({
       userId: actorId || "system",

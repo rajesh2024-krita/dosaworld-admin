@@ -310,7 +310,7 @@ export default function MenuManagement() {
         category_id: selectedItemCategory.id,
       });
 
-      console.log("✅ API Response:", response);
+      // console.log("✅ API Response:", response);
 
       fetchItems();
       setIsCreateItemOpen(false);
@@ -392,7 +392,7 @@ export default function MenuManagement() {
     if (result.isConfirmed) {
       try {
         const response = await api.delete(`/items/${id}`);
-        console.log("✅ Delete response:", response);
+        // console.log("✅ Delete response:", response);
 
         fetchItems();
 
