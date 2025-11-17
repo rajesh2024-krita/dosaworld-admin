@@ -503,6 +503,29 @@ export default function PartyManagement() {
     text: "#1a1a1a"
   }
 
+  const openAddParty = () => {
+    setForm({
+      id: 0, // important! 0 means new
+      partyName: "",
+      customerName: "",
+      phone: "",
+      email: "",
+      issuedDate: new Date().toISOString().split("T")[0],
+      dueDate: "",
+      guests: 0,
+      status: "registered",
+      products: [{ name: "", quantity: 0, price: 0 }],
+      address: "",
+    });
+    setOpen(true);
+  };
+
+  const openEditParty = (party) => {
+    setForm({ ...party }); // party.id will be > 0
+    setOpen(true);
+  };
+
+
   // ✅ API functions (using axios)
   const fetchParties = async () => {
     setLoading(true)
@@ -804,6 +827,7 @@ export default function PartyManagement() {
     }
     return colors[status]
   }
+
 
   return (
     <div className="">
@@ -1178,23 +1202,34 @@ export default function PartyManagement() {
 
                     {/* Status Dropdown */}
                     {/* Status Dropdown */}
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium">Status</label>
-                      <select
-                        value={form.status}
-                        onChange={(e) => setForm({ ...form, status: e.target.value as PartyStatus })}
-                        className="w-full border rounded p-2 text-sm h-9 focus:ring-1 focus:ring-green-500 focus:border-transparent"
-                        style={{ borderColor: themeColors.primary }}
-                        disabled={loading || !form.id} // 🔹 disable if adding new party
-                      >
-                        <option value="registered">Registered</option>
-                        <option value="advance paid">Advance Paid</option>
-                        <option value="paid">Paid</option>
-                        <option value="unpaid">Unpaid</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    </div>
-
+                    {/* Status Dropdown */}
+<div className="space-y-1">
+  <label className="text-sm font-medium">Status</label>
+  <select
+    value={form.status}
+    onChange={(e) => setForm({ ...form, status: e.target.value as PartyStatus })}
+    className={`w-full border rounded p-2 text-sm h-9 focus:ring-1 focus:ring-green-500 focus:border-transparent ${
+      form.id ? '' : 'bg-gray-100 cursor-not-allowed'
+    }`}
+    style={{ borderColor: themeColors.primary }}
+    disabled={!form.id || loading} // ✅ Disabled for new parties (form.id === 0), enabled for editing (form.id > 0)
+  >
+    <option value="registered">Registered</option>
+    <option value="advance paid">Advance Paid</option>
+    <option value="paid">Paid</option>
+    <option value="unpaid">Unpaid</option>
+    <option value="completed">Completed</option>
+  </select>
+  {!form.id ? (
+    <p className="text-xs text-gray-500">
+      Status will be set to "Registered" by default. You can change it later.
+    </p>
+  ) : (
+    <p className="text-xs text-gray-500">
+      Update the party status as needed
+    </p>
+  )}
+</div>
 
                     <Button
                       className="w-full h-9 font-medium"
