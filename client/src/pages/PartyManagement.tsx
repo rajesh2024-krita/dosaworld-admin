@@ -65,13 +65,13 @@ const fetchLogoBytes = async (url: string) => {
       const response = await fetch(url);
       return new Uint8Array(await response.arrayBuffer());
     }
-    
+
     // For external URLs or local assets
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch logo: ${response.status}`);
     }
-    
+
     const arrayBuffer = await response.arrayBuffer();
     return new Uint8Array(arrayBuffer);
   } catch (error) {
@@ -84,20 +84,20 @@ const fetchLogoBytes = async (url: string) => {
 // ===== Check if image is PNG =====
 const isPNG = (bytes: Uint8Array) => {
   // PNG signature: 89 50 4E 47 0D 0A 1A 0A
-  return bytes.length >= 8 && 
-         bytes[0] === 0x89 && 
-         bytes[1] === 0x50 && 
-         bytes[2] === 0x4E && 
-         bytes[3] === 0x47;
+  return bytes.length >= 8 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4E &&
+    bytes[3] === 0x47;
 };
 
 // ===== Check if image is JPEG =====
 const isJPEG = (bytes: Uint8Array) => {
   // JPEG signature: FF D8 FF
-  return bytes.length >= 3 && 
-         bytes[0] === 0xFF && 
-         bytes[1] === 0xD8 && 
-         bytes[2] === 0xFF;
+  return bytes.length >= 3 &&
+    bytes[0] === 0xFF &&
+    bytes[1] === 0xD8 &&
+    bytes[2] === 0xFF;
 };
 
 // ===== Embed Image Safely =====
@@ -133,19 +133,19 @@ const fetchPartyDetails = async (partyId: number) => {
 
 // ===== Calculate Invoice Summary =====
 const calculateInvoiceSummary = (products: Product[]) => {
-  const subtotal = products.reduce((sum, product) => {
+  const total = products.reduce((sum, product) => {
     return sum + (product.quantity * product.price);
   }, 0);
 
   // You can add tax calculations here based on your requirements
   const taxRate = 0.07; // 07% VAT - adjust as needed
-  const taxAmount = subtotal * taxRate;
-  const total = subtotal + taxAmount;
+  const taxAmount = total * taxRate;
+  const subtotal = total - taxAmount;
 
   return {
-    subtotal,
+    total,
     taxAmount,
-    total
+    subtotal
   };
 };
 
@@ -166,7 +166,7 @@ const generateInvoicePDF = async (party: any, logoBytes: Uint8Array) => {
   // Embed Logo safely
   let logoImage = null;
   let logoDims = { width: 0, height: 0 };
-  
+
   if (logoBytes.length > 0) {
     logoImage = await embedImageSafely(pdfDoc, logoBytes);
     if (logoImage) {
@@ -414,7 +414,7 @@ export const downloadInvoicePDF = async (party: any) => {
     link.href = url;
     link.download = `Invoice-${String(party.id).padStart(4, '0')}-${party.customerName.replace(/\s+/g, '_')}.pdf`;
     link.click();
-    
+
     // Clean up
     URL.revokeObjectURL(url);
     if (typeof Logo !== 'string') {
@@ -488,7 +488,7 @@ export default function PartyManagement() {
   const [selectedNotification, setSelectedNotification] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Search and Filter states
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<PartyStatus | "all">("all")
@@ -534,33 +534,48 @@ export default function PartyManagement() {
   // }
 
   const createParty = async (partyData: Omit<Party, "id">) => {
-    let requestData: any = { ...partyData };
-    
-    // Only generate and include PDF data if status is "completed" or "paid"
-    if (partyData.status === "completed" || partyData.status === "paid") {
-      try {
-        const logoBytes = await fetchLogoBytes(Logo);
-        const pdfBlob = await generateInvoicePDF({ ...partyData, id: 0 }, logoBytes);
-        
-        // Convert blob to base64 for sending to backend
-        const pdfBase64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(pdfBlob);
-        });
-        
-        requestData = {
-          ...partyData,
-          invoicePdf: pdfBase64, // Add PDF data to request
-        };
-      } catch (error) {
-        console.error("Error generating PDF for new party:", error);
-        // Continue without PDF if generation fails
+    try {
+      // 1️⃣ Create party first
+      const response = await api.post<ApiResponse<Party>>("/parties", partyData);
+      if (!response.data.success || !response.data.data) {
+        throw new Error(response.data.message || "Failed to create party");
       }
+
+      const createdParty = response.data.data;
+
+      // 2️⃣ Generate PDF if status is completed/paid
+      const normalizedStatus = (partyData.status || "").toLowerCase().trim();
+      if (normalizedStatus === "completed" || normalizedStatus === "paid") {
+        try {
+          const logoBytes = await fetchLogoBytes(Logo);
+          const pdfBlob = await generateInvoicePDF(createdParty, logoBytes);
+
+          const pdfBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(pdfBlob);
+          });
+
+          // Update party with PDF
+          await api.put<ApiResponse<Party>>(`/parties/${createdParty.id}`, {
+            invoicePdf: pdfBase64,
+          });
+
+        } catch (pdfError) {
+          console.error("PDF generation failed:", pdfError);
+        }
+      }
+
+      // ✅ Return in the format handleSubmit expects
+      return { data: { success: true, data: createdParty } };
+
+    } catch (error: any) {
+      console.error("Create party error:", error);
+      return { data: { success: false, message: error.message || "Failed to create party" } };
     }
-    
-    return await api.post<ApiResponse<Party>>("/parties", requestData);
-  }
+  };
+
 
   // const updateParty = async (id: number, partyData: Partial<Party>) => {
   //   return await api.put<ApiResponse<Party>>(`/parties/${id}`, partyData)
@@ -568,20 +583,20 @@ export default function PartyManagement() {
 
   const updateParty = async (id: number, partyData: Partial<Party>) => {
     let requestData: any = { ...partyData };
-    
+
     // Only generate and include PDF data if status is "completed" or "paid"
     if (partyData.status === "completed" || partyData.status === "paid") {
       try {
         const logoBytes = await fetchLogoBytes(Logo);
         const pdfBlob = await generateInvoicePDF({ ...partyData, id }, logoBytes);
-        
+
         // Convert blob to base64 for sending to backend
         const pdfBase64 = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(pdfBlob);
         });
-        
+
         requestData = {
           ...partyData,
           invoicePdf: pdfBase64, // Add PDF data to request
@@ -591,7 +606,7 @@ export default function PartyManagement() {
         // Continue without PDF if generation fails
       }
     }
-    
+
     return await api.put<ApiResponse<Party>>(`/parties/${id}`, requestData);
   }
 
@@ -1077,7 +1092,8 @@ export default function PartyManagement() {
                         <Input
                           type="date"
                           value={form.issuedDate}
-                          readOnly
+                          onChange={(e) => setForm({ ...form, issuedDate: e.target.value })}
+                          // readOnly
                           className="h-9 cursor-not-allowed bg-gray-50"
                         />
                       </div>
@@ -1161,6 +1177,7 @@ export default function PartyManagement() {
                     </div>
 
                     {/* Status Dropdown */}
+                    {/* Status Dropdown */}
                     <div className="space-y-1">
                       <label className="text-sm font-medium">Status</label>
                       <select
@@ -1168,7 +1185,7 @@ export default function PartyManagement() {
                         onChange={(e) => setForm({ ...form, status: e.target.value as PartyStatus })}
                         className="w-full border rounded p-2 text-sm h-9 focus:ring-1 focus:ring-green-500 focus:border-transparent"
                         style={{ borderColor: themeColors.primary }}
-                        disabled={loading}
+                        disabled={loading || !form.id} // 🔹 disable if adding new party
                       >
                         <option value="registered">Registered</option>
                         <option value="advance paid">Advance Paid</option>
@@ -1177,6 +1194,7 @@ export default function PartyManagement() {
                         <option value="completed">Completed</option>
                       </select>
                     </div>
+
 
                     <Button
                       className="w-full h-9 font-medium"
@@ -1258,7 +1276,7 @@ export default function PartyManagement() {
                         value={p.status}
                         onChange={(e) => handleStatusChange(p.id, e.target.value as PartyStatus)}
                         className={`w-full border rounded p-1 text-xs font-medium h-7 ${getStatusColor(p.status)}`}
-                        disabled={loading}
+                        disabled
                       >
                         <option value="registered">Registered</option>
                         <option value="advance paid">Advance Paid</option>
@@ -1266,6 +1284,7 @@ export default function PartyManagement() {
                         <option value="unpaid">Unpaid</option>
                         <option value="completed">Completed</option>
                       </select>
+                      <span className="text-xs text-red-600">*Update the status when editing</span>
                     </td>
                     <td className="p-2">
                       <div className="flex gap-1">
@@ -1326,8 +1345,8 @@ export default function PartyManagement() {
                       <Calendar className="w-8 h-8 mx-auto mb-1 text-gray-300" />
                       <p>No parties found.</p>
                       <p className="text-xs">
-                        {searchTerm || statusFilter !== "all" 
-                          ? "Try adjusting your search or filters." 
+                        {searchTerm || statusFilter !== "all"
+                          ? "Try adjusting your search or filters."
                           : 'Click "Add Party" to get started.'}
                       </p>
                     </td>

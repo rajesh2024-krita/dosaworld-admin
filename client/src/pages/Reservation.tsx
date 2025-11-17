@@ -15,6 +15,7 @@ import Loader from "@/components/Loader"
 import Swal from "sweetalert2"
 import withReactContent from "sweetalert2-react-content"
 import { api } from "@/lib/axios"
+import TablesPage from "./TablesPage"
 
 const MySwal = withReactContent(Swal)
 
@@ -59,6 +60,8 @@ export default function ReservationPage() {
 
   const [searchQuery, setSearchQuery] = useState("")
   const [reservationPage, setReservationPage] = useState(1)
+  const [tables, setTables] = useState([]);
+
   const reservationsPerPage = 5
 
   const [loading, setLoading] = useState(false) // loader state
@@ -96,6 +99,24 @@ export default function ReservationPage() {
       setLoading(false)
     }
   }
+
+  const getTables = async () => {
+    try {
+      const res = await api.get('/tables');
+      const data = res.data;
+      setTables(data)
+      return data;
+    } catch (error) {
+      console.error("Error fetching tables:", error);
+      return [];
+    }
+  };
+  useEffect(() => {
+    const load = async () => {
+      await getTables();
+    };
+    load();
+  }, []);
 
   useEffect(() => { fetchReservations() }, [])
   useEffect(() => { fetchSlots() }, [])
@@ -297,12 +318,14 @@ export default function ReservationPage() {
   // -------------------- Search & Pagination --------------------
   useEffect(() => {
     const query = searchQuery.toLowerCase()
+    console.log('reservations == ')
     const filtered = reservations.filter((r) => {
       const fullDate1 = new Date(r.date).toLocaleDateString("en-GB")
       const fullDate2 = new Date(r.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
       return (
         r.first_name.toLowerCase().includes(query) ||
         r.last_name.toLowerCase().includes(query) ||
+        (r.party_size?.toString().includes(query)) ||
         fullDate1.includes(query) ||
         fullDate2.toLowerCase().includes(query)
       )
@@ -351,13 +374,13 @@ export default function ReservationPage() {
             <thead className="bg-muted-foreground/10 uppercase">
               <tr>
                 <th className="p-2 border-b w-8">#</th>
-                <th className="p-2 border-b">First Name</th>
-                <th className="p-2 border-b">Last Name</th>
+                <th className="p-2 border-b">Name</th>
+                {/* <th className="p-2 border-b">Last Name</th> */}
                 <th className="p-2 border-b hidden xs:table-cell">Phone</th>
                 <th className="p-2 border-b hidden xs:table-cell">Email</th>
-                <th className="p-2 border-b hidden xs:table-cell">Party Size</th>
+                <th className="p-2 border-b">Table no</th>
                 <th className="p-2 border-b">Date</th>
-                <th className="p-2 border-b hidden xs:table-cell">Time</th>
+                <th className="p-2 border-b">Time Slot</th>
                 <th className="p-2 border-b w-24">Actions</th>
               </tr>
             </thead>
@@ -365,13 +388,13 @@ export default function ReservationPage() {
               {paginatedReservations.map((r, i) => (
                 <tr key={r.id} className="border-b last:border-b-0 hover:bg-muted/10">
                   <td className="p-2">{startIndex + i + 1}</td>
-                  <td className="p-2 font-medium">{r.first_name}</td>
-                  <td className="p-2 font-medium">{r.last_name}</td>
+                  <td className="p-2 font-medium">{r.first_name} {r.last_name}</td>
+                  {/* <td className="p-2 font-medium">{r.last_name}</td> */}
                   <td className="p-2 hidden xs:table-cell">{r.phone}</td>
                   <td className="p-2 hidden xs:table-cell">{r.email}</td>
-                  <td className="p-2 hidden xs:table-cell">{r.party_size}</td>
+                  <td className="p-2">{r.party_size}</td>
                   <td className="p-2">{new Date(r.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</td>
-                  <td className="p-2 hidden xs:table-cell">{r.time}</td>
+                  <td className="p-2">{r.time}</td>
                   <td className="p-2">
                     <div className="flex flex-wrap gap-1">
                       <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => { setForm(r); setEditId(r.id!); setOpenForm(true) }}>
@@ -413,6 +436,9 @@ export default function ReservationPage() {
           </div>
         )}
       </div>
+
+      {/* Table management */}
+      <TablesPage />
 
       {/* Time Slot Management */}
       <div className="mt-6">
@@ -509,10 +535,11 @@ export default function ReservationPage() {
                 value={form.party_size}
                 onChange={(e) => setForm({ ...form, party_size: Number(e.target.value) })}
               >
-                {[1, 2, 3, 4, 5, 6].map((size) => (
-                  <option key={size} value={size}>{size} Guests</option>
+                {tables.map((table) => (
+                  <option key={table.id} value={table.table_no}>
+                    Table {table.table_no} ({table.seats} seats)
+                  </option>
                 ))}
-                <option value={7}>7+ Guests</option>
               </select>
             </div>
 
@@ -577,13 +604,110 @@ export default function ReservationPage() {
             <DialogTitle className="text-sm sm:text-base">Reservation Details</DialogTitle>
           </DialogHeader>
           {viewData && (
-            <div className="space-y-2 text-sm">
-              <p><strong>Name:</strong> {viewData.first_name} {viewData.last_name}</p>
-              <p><strong>Phone:</strong> {viewData.phone}</p>
-              <p><strong>Email:</strong> {viewData.email}</p>
-              <p><strong>Party Size:</strong> {viewData.party_size}</p>
-              <p><strong>Date:</strong> {viewData.date}</p>
-              <p><strong>Time:</strong> {viewData.time}</p>
+            <div className="bg-white">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+
+                {/* Name */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 text-gray-400">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Name</span>
+                  </div>
+                  <span className="block text-gray-900 font-medium text-base pl-7">
+                    {viewData.first_name} {viewData.last_name}
+                  </span>
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 text-gray-400">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M7 2a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V4a2 2 0 00-2-2H7zm3 14a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</span>
+                  </div>
+                  <a href={`tel:${viewData.phone}`} className="block text-green-600 hover:text-green-700 font-medium text-base pl-7 transition-colors">
+                    {viewData.phone}
+                  </a>
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 text-gray-400">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</span>
+                  </div>
+                  <a href={`mailto:${viewData.email}`} className="block text-green-600 hover:text-green-700 font-medium text-base pl-7 break-all transition-colors">
+                    {viewData.email}
+                  </a>
+                </div>
+
+                {/* Party Size */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 text-gray-400">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Table No</span>
+                  </div>
+                  <div className="flex items-center gap-2 pl-7">
+                    <span className="text-gray-900 font-medium text-base">
+                      {viewData.party_size}
+                    </span>
+                    {/* <span className="text-xs text-gray-500">Seat</span> */}
+                  </div>
+                </div>
+
+                {/* Date */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 text-gray-400">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Date</span>
+                  </div>
+                  <span className="block text-gray-900 font-medium text-base pl-7">
+                    {new Date(viewData.date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
+
+                {/* Time */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 text-gray-400">
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Time</span>
+                  </div>
+                  <span className="block text-gray-900 font-medium text-base pl-7">
+                    {viewData.time}
+                  </span>
+                </div>
+
+              </div>
             </div>
           )}
         </DialogContent>
