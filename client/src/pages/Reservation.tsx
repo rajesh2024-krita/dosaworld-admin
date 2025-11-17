@@ -252,7 +252,7 @@ export default function ReservationPage() {
 
       await fetchSlots();
     } catch (err: any) {
-      console.error("Error saving slot:", err);
+      // console.error("Error saving slot:", err);
 
       // Check if server sent the "Time slot already exists" warning
       if (err.response && err.response.status === 400 && err.response.data?.message) {
@@ -302,7 +302,7 @@ export default function ReservationPage() {
 
         await fetchSlots()
       } catch (err) {
-        console.error("Error deleting slot:", err)
+        // console.error("Error deleting slot:", err)
         await MySwal.fire({
           icon: "error",
           title: "Oops...",
