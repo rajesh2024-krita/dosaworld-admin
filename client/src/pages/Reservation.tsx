@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import axios from "axios"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,6 +62,11 @@ export default function ReservationPage() {
   const [reservationPage, setReservationPage] = useState(1)
   const [tables, setTables] = useState([]);
 
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+  const [dateFilter, setDateFilter] = useState<"all" | "thisWeek" | "comingWeek" | "thisMonth">("all");
+
+
   const reservationsPerPage = 5
 
   const [loading, setLoading] = useState(false) // loader state
@@ -86,6 +91,8 @@ export default function ReservationPage() {
       setLoading(false)
     }
   }
+
+
 
   // -------------------- Fetch Time Slots --------------------
   const fetchSlots = async () => {
@@ -334,10 +341,86 @@ export default function ReservationPage() {
     setReservationPage(1)
   }, [searchQuery, reservations])
 
+  const getStartOfWeek = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+  };
+
+  const getStartOfNextWeek = (date: Date) => {
+    const start = getStartOfWeek(date);
+    start.setDate(start.getDate() + 7);
+    return start;
+  };
+
+  const getStartOfMonth = (date: Date) => {
+    const d = new Date(date);
+    d.setDate(1);
+    return d;
+  };
+
+  useEffect(() => {
+    const today = new Date();
+
+    const thisWeekStart = getStartOfWeek(today);
+    const nextWeekStart = getStartOfNextWeek(today);
+    const nextWeekEnd = new Date(nextWeekStart);
+    nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
+
+    const thisMonthStart = getStartOfMonth(today);
+
+    let updated = [...reservations]; // original full list
+
+    updated = updated.filter(r => {
+      const created = new Date(r.created_at);
+
+      switch (dateFilter) {
+        case "thisWeek":
+          return created >= thisWeekStart && created <= today;
+
+        case "comingWeek":
+          return created >= nextWeekStart && created <= nextWeekEnd;
+
+        case "thisMonth":
+          return created >= thisMonthStart;
+
+        default:
+          return true;
+      }
+    });
+
+    setFilteredReservations(updated);
+  }, [dateFilter, reservations]);
+
   const totalReservationPages = Math.ceil(filteredReservations.length / reservationsPerPage)
   const startIndex = (reservationPage - 1) * reservationsPerPage
   const paginatedReservations = filteredReservations.slice(startIndex, startIndex + reservationsPerPage)
 
+
+  const sortedReservations = React.useMemo(() => {
+    let sorted = [...paginatedReservations];
+    if (sortConfig !== null) {
+      sorted.sort((a, b) => {
+        const key = sortConfig.key as keyof typeof a;
+        const valueA = a[key];
+        const valueB = b[key];
+
+        if (valueA < valueB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (valueA > valueB) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+    return sorted;
+  }, [paginatedReservations, sortConfig]);
+
+  const handleSort = (key: string) => {
+    let direction: "asc" | "desc" = "asc";
+    if (sortConfig?.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
   // -------------------- Loader Render --------------------
   if (loading) return <Loader />
 
@@ -355,6 +438,17 @@ export default function ReservationPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="text-sm h-8 px-2 w-full sm:w-auto"
             />
+            <select
+              className="border px-2 py-1 rounded text-xs"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as any)}
+            >
+              <option value="all">All</option>
+              <option value="thisWeek">This Week</option>
+              <option value="comingWeek">Next Week</option>
+              <option value="thisMonth">This Month</option>
+            </select>
+
             <Button
               size="sm"
               className="h-8 px-2 text-sm w-full sm:w-auto flex items-center justify-center gap-1"
@@ -369,23 +463,52 @@ export default function ReservationPage() {
           </div>
         </div>
 
+
+
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="min-w-full text-left text-xs sm:text-sm">
             <thead className="bg-muted-foreground/10 uppercase">
               <tr>
                 <th className="p-2 border-b w-8">#</th>
-                <th className="p-2 border-b">Name</th>
+                <th
+                  className="p-2 border-b cursor-pointer select-none"
+                  onClick={() => handleSort("first_name")}
+                >
+                  Name {sortConfig?.key === "first_name" && (sortConfig.direction === "asc" ? "▲" : "▼")}
+                </th>
                 {/* <th className="p-2 border-b">Last Name</th> */}
-                <th className="p-2 border-b hidden xs:table-cell">Phone</th>
+                <th
+                  className="p-2 border-b cursor-pointer select-none hidden xs:table-cell"
+                  onClick={() => handleSort("phone")}
+                >
+                  Phone {sortConfig?.key === "phone" && (sortConfig.direction === "asc" ? "▲" : "▼")}
+                </th>
                 <th className="p-2 border-b hidden xs:table-cell">Email</th>
-                <th className="p-2 border-b">Table no</th>
-                <th className="p-2 border-b">Date</th>
+                <th
+                  className="p-2 border-b cursor-pointer select-none"
+                  onClick={() => handleSort("party_size")}
+                >
+                  Table no {sortConfig?.key === "party_size" && (sortConfig.direction === "asc" ? "▲" : "▼")}
+                </th>
+                <th
+                  className="p-2 border-b cursor-pointer select-none"
+                  onClick={() => handleSort("date")}
+                >
+                  Reserved on {sortConfig?.key === "date" && (sortConfig.direction === "asc" ? "▲" : "▼")}
+                </th>
                 <th className="p-2 border-b">Time Slot</th>
+                <th
+                  className="p-2 border-b cursor-pointer select-none"
+                  onClick={() => handleSort("created_at")}
+                >
+                  Created At {sortConfig?.key === "created_at" && (sortConfig.direction === "asc" ? "▲" : "▼")}
+                </th>
+
                 <th className="p-2 border-b w-24">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedReservations.map((r, i) => (
+              {sortedReservations.map((r, i) => (
                 <tr key={r.id} className="border-b last:border-b-0 hover:bg-muted/10">
                   <td className="p-2">{startIndex + i + 1}</td>
                   <td className="p-2 font-medium">{r.first_name} {r.last_name}</td>
@@ -395,6 +518,7 @@ export default function ReservationPage() {
                   <td className="p-2">{r.party_size}</td>
                   <td className="p-2">{new Date(r.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</td>
                   <td className="p-2">{r.time}</td>
+                  <td className="p-2">{new Date(r.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</td>
                   <td className="p-2">
                     <div className="flex flex-wrap gap-1">
                       <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => { setForm(r); setEditId(r.id!); setOpenForm(true) }}>
