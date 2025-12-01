@@ -254,12 +254,40 @@ const generateInvoicePDF = async (party: any, logoBytes: Uint8Array) => {
   toY -= 20;
 
   // Use actual customer data from backend
-  const toLines = [
-    partyDetails.customerName,
-    ...partyDetails.address.split('\n').filter(line => line.trim()), // Split address by newlines
-    `Phone: ${partyDetails.phone}`,
-    `Email: ${partyDetails.email}`
-  ].filter(line => line && line.trim()); // Remove empty lines
+  // const toLines = [
+  //   partyDetails.customerName,
+  //   ...partyDetails.address.split('\n').filter(line => line.trim()), // Split address by newlines
+  //   `Phone: ${partyDetails.phone}`,
+  //   `Email: ${partyDetails.email}`
+  // ].filter(line => line && line.trim()); // Remove empty lines
+function splitByWords(text, maxWidth) {
+  const words = text.split(/\s+/); // split by space
+  const lines = [];
+  let currentLine = "";
+
+  words.forEach(word => {
+    if ((currentLine + word).length <= maxWidth) {
+      currentLine += (currentLine ? " " : "") + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  });
+
+  if (currentLine) lines.push(currentLine);
+
+  return lines;
+}
+
+const toLines = [
+  partyDetails.customerName,
+  ...splitByWords(partyDetails.address, 40), // wrap by words up to 40 chars
+  `Phone: ${partyDetails.phone}`,
+  `Email: ${partyDetails.email}`
+].filter(line => line.trim());
+
+
+
 
   // Ensure we don't exceed reasonable line count
   const maxToLines = 8;
@@ -1203,33 +1231,32 @@ export default function PartyManagement() {
                     {/* Status Dropdown */}
                     {/* Status Dropdown */}
                     {/* Status Dropdown */}
-<div className="space-y-1">
-  <label className="text-sm font-medium">Status</label>
-  <select
-    value={form.status}
-    onChange={(e) => setForm({ ...form, status: e.target.value as PartyStatus })}
-    className={`w-full border rounded p-2 text-sm h-9 focus:ring-1 focus:ring-green-500 focus:border-transparent ${
-      form.id ? '' : 'bg-gray-100 cursor-not-allowed'
-    }`}
-    style={{ borderColor: themeColors.primary }}
-    disabled={!form.id || loading} // ✅ Disabled for new parties (form.id === 0), enabled for editing (form.id > 0)
-  >
-    <option value="registered">Registered</option>
-    <option value="advance paid">Advance Paid</option>
-    <option value="paid">Paid</option>
-    <option value="unpaid">Unpaid</option>
-    <option value="completed">Completed</option>
-  </select>
-  {!form.id ? (
-    <p className="text-xs text-gray-500">
-      Status will be set to "Registered" by default. You can change it later.
-    </p>
-  ) : (
-    <p className="text-xs text-gray-500">
-      Update the party status as needed
-    </p>
-  )}
-</div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Status</label>
+                      <select
+                        value={form.status}
+                        onChange={(e) => setForm({ ...form, status: e.target.value as PartyStatus })}
+                        className={`w-full border rounded p-2 text-sm h-9 focus:ring-1 focus:ring-green-500 focus:border-transparent ${form.id ? '' : 'bg-gray-100 cursor-not-allowed'
+                          }`}
+                        style={{ borderColor: themeColors.primary }}
+                        disabled={!form.id || loading} // ✅ Disabled for new parties (form.id === 0), enabled for editing (form.id > 0)
+                      >
+                        <option value="registered">Registered</option>
+                        <option value="advance paid">Advance Paid</option>
+                        <option value="paid">Paid</option>
+                        <option value="unpaid">Unpaid</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                      {!form.id ? (
+                        <p className="text-xs text-gray-500">
+                          Status will be set to "Registered" by default. You can change it later.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500">
+                          Update the party status as needed
+                        </p>
+                      )}
+                    </div>
 
                     <Button
                       className="w-full h-9 font-medium"
