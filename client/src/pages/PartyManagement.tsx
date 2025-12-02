@@ -245,6 +245,8 @@ const generateInvoicePDF = async (party: any, logoBytes: Uint8Array) => {
     "+494032527895",
     "dosaworld.de",
     "Registration No: HRB 184384",
+    "BIC: NOLADE21HAM",
+    "Bank Account No: DE74 2075 0000 0091 5285 39",
     "VAT No: DE365419852"
   ];
   fromLines.forEach(line => { page.drawText(line, { x: fromX, y: fromY, font, size: 10 }); fromY -= 12; });
