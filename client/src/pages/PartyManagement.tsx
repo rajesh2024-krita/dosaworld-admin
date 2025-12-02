@@ -531,6 +531,22 @@ export default function PartyManagement() {
     text: "#1a1a1a"
   }
 
+  const clearId = () => {
+    setForm({
+    id: 0,
+    partyName: "",
+    customerName: "",
+    phone: "",
+    email: "",
+    issuedDate: "",
+    dueDate: "",
+    guests: 0,
+    status: "registered",
+    products: [{ name: "", quantity: 0, price: 0 }],
+    address: "",
+  });
+  };
+
   const openAddParty = () => {
     setForm({
       id: 0, // important! 0 means new
@@ -580,9 +596,6 @@ export default function PartyManagement() {
     }
   }
 
-  // const createParty = async (partyData: Omit<Party, "id">) => {
-  //   return await api.post<ApiResponse<Party>>("/parties", partyData)
-  // }
 
   const createParty = async (partyData: Omit<Party, "id">) => {
     try {
@@ -595,8 +608,8 @@ export default function PartyManagement() {
       const createdParty = response.data.data;
 
       // 2️⃣ Generate PDF if status is completed/paid
-      const normalizedStatus = (partyData.status || "").toLowerCase().trim();
-      if (normalizedStatus === "completed" || normalizedStatus === "paid") {
+      const normalizedStatus = (createdParty.status || "").toLowerCase().trim();
+      if (normalizedStatus === "registered") {
         try {
           const logoBytes = await fetchLogoBytes(Logo);
           const pdfBlob = await generateInvoicePDF(createdParty, logoBytes);
@@ -608,8 +621,12 @@ export default function PartyManagement() {
             reader.readAsDataURL(pdfBlob);
           });
 
+          console.log("pdfBase64 : ",pdfBase64);
+          
+
           // Update party with PDF
           await api.put<ApiResponse<Party>>(`/parties/${createdParty.id}`, {
+            ...createdParty,
             invoicePdf: pdfBase64,
           });
 
@@ -626,11 +643,6 @@ export default function PartyManagement() {
       return { data: { success: false, message: error.message || "Failed to create party" } };
     }
   };
-
-
-  // const updateParty = async (id: number, partyData: Partial<Party>) => {
-  //   return await api.put<ApiResponse<Party>>(`/parties/${id}`, partyData)
-  // }
 
   const updateParty = async (id: number, partyData: Partial<Party>) => {
     let requestData: any = { ...partyData };
@@ -752,31 +764,33 @@ export default function PartyManagement() {
     }
   }
 
-  const handleStatusChange = async (id: number, status: PartyStatus) => {
-    try {
-      const response = await updatePartyStatus(id, status)
-      const result = response.data
+  // const handleStatusChange = async (id: number, status: PartyStatus) => {
+  //   console.log("This is working");
+    
+  //   try {
+  //     const response = await updatePartyStatus(id, status)
+  //     const result = response.data
 
-      // console.log("Status update API response:", result)
+  //     // console.log("Status update API response:", result)
 
-      if (result.success && result.data) {
-        setParties((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, status: result.data.status } : p))
-        )
-        if (status === "paid" || status === "advance paid" || status === "completed") {
-          setSelectedNotification(null)
-        }
-        setError(null)
-      } else {
-        throw new Error(result.message || "Failed to update status")
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to update status'
-      setError(msg)
-      MySwal.fire('Error', msg, 'error')
-      // console.error('Error updating status:', err)
-    }
-  }
+  //     if (result.success && result.data) {
+  //       setParties((prev) =>
+  //         prev.map((p) => (p.id === id ? { ...p, status: result.data.status } : p))
+  //       )
+  //       if (status === "paid" || status === "advance paid" || status === "completed") {
+  //         setSelectedNotification(null)
+  //       }
+  //       setError(null)
+  //     } else {
+  //       throw new Error(result.message || "Failed to update status")
+  //     }
+  //   } catch (err) {
+  //     const msg = err instanceof Error ? err.message : 'Failed to update status'
+  //     setError(msg)
+  //     MySwal.fire('Error', msg, 'error')
+  //     // console.error('Error updating status:', err)
+  //   }
+  // }
 
   const handleProductChange = (index: number, field: keyof Product, value: any) => {
     const updatedProducts = [...form.products]
@@ -1034,12 +1048,13 @@ export default function PartyManagement() {
             </CardTitle>
             <div className="flex items-center gap-2">
               {loading && <Loader2 className="w-4 h-4 animate-spin text-white" />}
-              <Dialog open={open} onOpenChange={setOpen}>
+              <Dialog open={open} onOpenChange={setOpen} >
                 <DialogTrigger asChild>
                   <Button
                     className="shadow-sm hover:shadow transition-all text-sm h-8"
                     style={{ backgroundColor: "white", color: themeColors.primary }}
                     disabled={loading}
+                    onClick={clearId}
                   >
                     <Plus className="w-3 h-3 mr-1" /> Add Party
                   </Button>
@@ -1336,7 +1351,7 @@ export default function PartyManagement() {
                     <td className="p-2">
                       <select
                         value={p.status}
-                        onChange={(e) => handleStatusChange(p.id, e.target.value as PartyStatus)}
+                        // onChange={(e) => handleStatusChange(p.id, e.target.value as PartyStatus)}
                         className={`w-full border rounded p-1 text-xs font-medium h-7 ${getStatusColor(p.status)}`}
                         disabled
                       >
