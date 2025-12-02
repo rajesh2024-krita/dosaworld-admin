@@ -26,7 +26,6 @@ interface Reservation {
   phone: string
   email: string
   party_size: number
-  members: number
   date: string
   time: string
 }
@@ -46,7 +45,6 @@ export default function ReservationPage() {
     phone: "",
     email: "",
     party_size: 1,
-    members: 1,
     date: "",
     time: "",
   })
@@ -59,9 +57,6 @@ export default function ReservationPage() {
   const [slotForm, setSlotForm] = useState<TimeSlot>({ start_time: "", end_time: "" })
   const [editSlotId, setEditSlotId] = useState<number | null>(null)
   const [openSlotForm, setOpenSlotForm] = useState(false)
-
-  const [selectedSeats, setSelectedSeats] = useState(4);
-
 
   const [searchQuery, setSearchQuery] = useState("")
   const [reservationPage, setReservationPage] = useState(1)
@@ -159,16 +154,15 @@ export default function ReservationPage() {
       }
 
       // Reset form & close modal
-      // setForm({
-      //   first_name: "",
-      //   last_name: "",
-      //   phone: "",
-      //   email: "",
-      //   party_size: 1,
-      //   members: 1,
-      //   date: "",
-      //   time: "",
-      // });
+      setForm({
+        first_name: "",
+        last_name: "",
+        phone: "",
+        email: "",
+        party_size: 1,
+        date: "",
+        time: "",
+      });
       setEditId(null);
       setOpenForm(false);
 
@@ -459,7 +453,7 @@ export default function ReservationPage() {
               size="sm"
               className="h-8 px-2 text-sm w-full sm:w-auto flex items-center justify-center gap-1"
               onClick={() => {
-                setForm({ first_name: "", last_name: "", phone: "", email: "", party_size: 1, members: 1, date: "", time: "" })
+                setForm({ first_name: "", last_name: "", phone: "", email: "", party_size: 1, date: "", time: "" })
                 setEditId(null)
                 setOpenForm(true)
               }}
@@ -482,6 +476,7 @@ export default function ReservationPage() {
                 >
                   Name {sortConfig?.key === "first_name" && (sortConfig.direction === "asc" ? "▲" : "▼")}
                 </th>
+                {/* <th className="p-2 border-b">Last Name</th> */}
                 <th
                   className="p-2 border-b cursor-pointer select-none hidden xs:table-cell"
                   onClick={() => handleSort("phone")}
@@ -495,7 +490,6 @@ export default function ReservationPage() {
                 >
                   Table no {sortConfig?.key === "party_size" && (sortConfig.direction === "asc" ? "▲" : "▼")}
                 </th>
-                <th className="p-2 border-b">Members</th>
                 <th
                   className="p-2 border-b cursor-pointer select-none"
                   onClick={() => handleSort("date")}
@@ -522,38 +516,14 @@ export default function ReservationPage() {
                   <td className="p-2 hidden xs:table-cell">{r.phone}</td>
                   <td className="p-2 hidden xs:table-cell">{r.email}</td>
                   <td className="p-2">{r.party_size}</td>
-                  <td className="p-2">{r.members}</td>
                   <td className="p-2">{new Date(r.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</td>
                   <td className="p-2">{r.time}</td>
                   <td className="p-2">{new Date(r.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</td>
                   <td className="p-2">
                     <div className="flex flex-wrap gap-1">
-                      {/* <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => { console.log(r.members); setForm(r); setEditId(r.id!); setOpenForm(true) }}>
-                        <Edit className="w-3 h-3" />
-                      </Button> */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 w-6 p-0"
-                        onClick={() => {
-
-                          // 1️⃣ Set form with selected reservation
-                          setForm(r);
-
-                          // 2️⃣ Find the table using r.party_size (table ID)
-                          const selectedTable = tables.find(t => t.id === r.party_size);
-
-                          // 3️⃣ Update seats based on table
-                          setSelectedSeats(selectedTable?.seats || 1);
-
-                          // 4️⃣ Open edit popup
-                          setEditId(r.id!);
-                          setOpenForm(true);
-                        }}
-                      >
+                      <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => { setForm(r); setEditId(r.id!); setOpenForm(true) }}>
                         <Edit className="w-3 h-3" />
                       </Button>
-
                       <Button size="sm" variant="outline" className="h-6 w-6 p-0" onClick={() => { setViewData(r); setOpenView(true) }}>
                         <Eye className="w-3 h-3" />
                       </Button>
@@ -681,7 +651,7 @@ export default function ReservationPage() {
                 />
               </div>
             </div>
-            {/* 
+
             <div>
               <label className="block text-sm font-medium mb-1">Party Size</label>
               <select
@@ -695,70 +665,7 @@ export default function ReservationPage() {
                   </option>
                 ))}
               </select>
-            </div> */}
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Party Size</label>
-              <select
-                className="border p-2 rounded w-full text-sm"
-                value={form.party_size}
-                onChange={(e) => {
-                  const tableId = Number(e.target.value);
-
-                  const selectedTable = tables.find(
-                    (t) => t.id === tableId   // ✅ find by ID
-                  );
-
-                  setSelectedSeats(selectedTable?.seats || 1);
-
-                  setForm({
-                    ...form,
-                    party_size: tableId,      // ✅ store table ID
-                    members: 1,               // reset members
-                  });
-                }}
-
-              >
-                {tables.map((table) => (
-                  <option key={table.id} value={table.id}>
-                    Table {table.table_no} ({table.seats} seats)
-                  </option>
-                ))}
-              </select>
             </div>
-
-            <div className="mt-3">
-              <label className="block text-sm font-medium mb-1">Members</label>
-              <input
-                type="number"
-                className="border p-2 rounded w-full text-sm"
-                value={form.members}
-                min={1}
-                max={selectedSeats}
-                onChange={(e) => {
-                  setForm({ ...form, party_size: form.party_size });
-                  let value = Number(e.target.value);
-
-                  // 🔥 Allow user to type freely but auto-correct afterwards
-                  if (value <= 0 || isNaN(value)) {
-                    setForm({ ...form, members: 1 }); // allow empty
-                    return;
-                  }
-
-                  if (value > selectedSeats) {
-                    value = selectedSeats;
-                  }
-
-
-                  setForm({ ...form, members: value });
-                }}
-                placeholder={`Max ${selectedSeats}`}
-              />
-
-
-
-            </div>
-
 
             <div className="flex justify-between">
               <div>
