@@ -234,7 +234,7 @@ const generateInvoicePDF = async (party: any, logoBytes: Uint8Array) => {
   let toY = y;
 
   // From Section (Your Company Info)
-  page.drawText("From:", { x: fromX, y: fromY, font: fontBold, size: 12 });
+  page.drawText("Billing Address:", { x: fromX, y: fromY, font: fontBold, size: 12 });
   fromY -= 20;
   const fromLines = [
     "Dosa World Indisch Restaurant UG",
@@ -252,7 +252,7 @@ const generateInvoicePDF = async (party: any, logoBytes: Uint8Array) => {
   fromLines.forEach(line => { page.drawText(line, { x: fromX, y: fromY, font, size: 10 }); fromY -= 12; });
 
   // To Section (Customer Info from backend)
-  page.drawText("To:", { x: toX, y: toY, font: fontBold, size: 12 });
+  page.drawText("Delivery Address:", { x: toX, y: toY, font: fontBold, size: 12 });
   toY -= 20;
 
   // Use actual customer data from backend
